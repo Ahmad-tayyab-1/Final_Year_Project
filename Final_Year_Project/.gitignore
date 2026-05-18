@@ -1,0 +1,37 @@
+# Virtual environments
+venv/
+.env/
+env/
+newenv/
+venv/
+env/
+key.txt
+__pycache__/
+*.pyc
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+
+
+# Build files
+build/
+dist/

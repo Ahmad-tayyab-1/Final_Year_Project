@@ -1,0 +1,602 @@
+import fitz
+import re
+import os
+import json
+from docx import Document as DocxDocument
+from pptx import Presentation
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.lib.units import inch
+from groq import Groq
+from .youtube import extract_youtube_video_id
+ 
+ 
+class DocumentProcessor:
+ 
+    def extract_text_with_pages(self, file_path):
+        doc = fitz.open(file_path)
+        pages = []
+        full_text = ""
+        for page_num, page in enumerate(doc, 1):
+            text = page.get_text()
+            pages.append({"page": page_num, "text": text})
+            full_text += f"\\n--- Page {page_num} ---\\n{text}"
+        doc.close()
+        return full_text, pages, len(pages)
+ 
+    def extract_text_from_docx(self, file_path):
+        doc = DocxDocument(file_path)
+        return "\\n".join([p.text for p in doc.paragraphs])
+    
+    def extract_text_from_doc(self, file_path):
+        """Extract text from older .doc files (Office 97-2003 format)."""
+        try:
+            # Try using python-docx first (works with some .doc files)
+            doc = DocxDocument(file_path)
+            return "\\n".join([p.text for p in doc.paragraphs])
+        except Exception as e:
+            # If that fails, try to convert .doc to .docx using LibreOffice or similar
+            try:
+                import subprocess
+                import tempfile
+                
+                # Create a temporary directory for conversion
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    output_path = os.path.join(tmp_dir, "converted.docx")
+                    
+                    # Try using LibreOffice command line conversion
+                    try:
+                        subprocess.run([
+                            'soffice', '--headless', '--convert-to', 'docx',
+                            '--outdir', tmp_dir, file_path
+                        ], check=True, capture_output=True, timeout=30)
+                        
+                        converted_file = os.path.join(tmp_dir, os.path.splitext(os.path.basename(file_path))[0] + ".docx")
+                        if os.path.exists(converted_file):
+                            doc = DocxDocument(converted_file)
+                            return "\\n".join([p.text for p in doc.paragraphs])
+                    except (subprocess.CalledProcessError, FileNotFoundError):
+                        pass
+            except Exception:
+                pass
+            
+            # Fallback: Extract text from binary format
+            try:
+                from docx.oxml import parse_xml
+                from zipfile import ZipFile
+                
+                # Try to read as if it's a zipped XML (some .doc files are actually docx)
+                try:
+                    with ZipFile(file_path, 'r') as zip_ref:
+                        xml_content = zip_ref.read('word/document.xml')
+                        import re
+                        # Remove XML tags
+                        text = re.sub(r'<[^>]+>', '', xml_content.decode('utf-8'))
+                        return text.strip()
+                except:
+                    pass
+            except Exception:
+                pass
+            
+            # Final fallback: Extract ASCII text from binary
+            try:
+                with open(file_path, 'rb') as f:
+                    content = f.read()
+                    # Try to decode common text patterns in .doc files
+                    text = []
+                    current = b''
+                    for byte in content:
+                        if 32 <= byte <= 126:  # Printable ASCII
+                            current += bytes([byte])
+                        else:
+                            if len(current) > 4:
+                                try:
+                                    text.append(current.decode('utf-8', errors='ignore'))
+                                except:
+                                    pass
+                            current = b''
+                    
+                    result = ' '.join(text)
+                    return result if result.strip() else "Could not extract text from .doc file. File may be corrupted."
+            except Exception as extract_err:
+                return f"Error processing .doc file: {str(extract_err)}"
+ 
+    def extract_text_from_pptx(self, file_path):
+        prs  = Presentation(file_path)
+        text = ""
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    text += shape.text + "\\n"
+        return text
+    
+    def extract_text_from_xlsx(self, file_path):
+        """Extract text from XLSX file."""
+        try:
+            import openpyxl
+        except ImportError:
+            return "openpyxl not installed for XLSX processing"
+        
+        wb = openpyxl.load_workbook(file_path)
+        text = ""
+        
+        for sheet_name in wb.sheetnames:
+            sheet = wb[sheet_name]
+            text += f"Sheet: {sheet_name}\\n"
+            
+            for row in sheet.iter_rows(values_only=True):
+                row_text = " ".join([str(cell) for cell in row if cell is not None])
+                if row_text.strip():
+                    text += row_text + "\\n"
+        
+        return text
+
+    def extract_text_from_txt(self, file_path):
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
+ 
+    def clean_text(self, text):
+        return re.sub(r"\\s+", " ", text).strip()
+ 
+    def generate_office_html(self, doc):
+        """Generate HTML representation of Office documents."""
+        file_path = doc.file.path
+        file_type = doc.file_type
+        
+        if file_type in ('docx', 'doc'):
+            return self._docx_to_html(file_path)
+        elif file_type == 'pptx':
+            return self._pptx_to_html(file_path)
+        elif file_type == 'xlsx':
+            return self._xlsx_to_html(file_path)
+        else:
+            return f"<p>Unsupported file type: {file_type}</p>"
+    
+    def convert_office_to_pdf(self, doc):
+        """Convert Office document to PDF using LibreOffice and return PDF file path."""
+        file_path = doc.file.path
+        file_type = doc.file_type
+
+        # All office types are handled by LibreOffice
+        if file_type in ['doc', 'docx', 'pptx', 'xlsx']:
+            pdf_path = file_path.rsplit('.', 1)[0] + '.pdf'
+            self._libreoffice_to_pdf(file_path, pdf_path)
+        else:
+            raise ValueError(f"Unsupported conversion for {file_type}")
+
+        return pdf_path
+
+    def _libreoffice_to_pdf(self, file_path, pdf_path):
+        """Convert any Office file to PDF using LibreOffice headless mode."""
+        import subprocess
+        import shutil
+        import tempfile
+
+        # LibreOffice executable – try PATH first, then the default install location
+        soffice_candidates = [
+            r"C:\Program Files\LibreOffice\program\soffice.exe",
+            r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+            "soffice",  # if it is on PATH
+        ]
+        soffice = None
+        for candidate in soffice_candidates:
+            if os.path.exists(candidate) if os.sep in candidate else True:
+                soffice = candidate
+                break
+        if soffice is None:
+            raise RuntimeError("LibreOffice (soffice) not found. Please install LibreOffice.")
+
+        # LibreOffice writes the output PDF next to the source file inside --outdir.
+        # We work in a temp directory to avoid polluting the media folder during conversion.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # Copy the source document into the temp dir
+            tmp_src = os.path.join(tmp_dir, os.path.basename(file_path))
+            shutil.copy2(file_path, tmp_src)
+
+            # Run the conversion
+            result = subprocess.run(
+                [soffice, '--headless', '--convert-to', 'pdf', '--outdir', tmp_dir, tmp_src],
+                capture_output=True,
+                timeout=120,
+            )
+
+            if result.returncode != 0:
+                stderr = result.stderr.decode(errors='ignore')
+                raise RuntimeError(f"LibreOffice PDF conversion failed: {stderr}")
+
+            # LibreOffice names the output <original_stem>.pdf
+            base_stem = os.path.splitext(os.path.basename(file_path))[0]
+            tmp_pdf = os.path.join(tmp_dir, base_stem + '.pdf')
+
+            if not os.path.exists(tmp_pdf):
+                raise RuntimeError(
+                    "LibreOffice ran but did not produce a PDF. "
+                    "Check that the file is not password-protected."
+                )
+
+            # Move the finished PDF to the target location
+            shutil.move(tmp_pdf, pdf_path)
+    
+    def _docx_to_html(self, file_path):
+        """Convert DOCX to full-fidelity HTML using mammoth (preserves images, tables, formatting)."""
+        import mammoth
+        with open(file_path, "rb") as f:
+            result = mammoth.convert_to_html(f)
+        return result.value
+    
+    def _pptx_to_html(self, file_path):
+        """Convert PPTX to HTML slides with ALL images extracted."""
+        import base64
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
+        prs = Presentation(file_path)
+        html_parts = ["<div class='pptx-viewer'>"]
+
+        def _extract_shapes(shapes, parts_list):
+            """Recursively extract content from shapes including groups."""
+            for shape in shapes:
+                # Recurse into group shapes
+                if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                    try:
+                        _extract_shapes(shape.shapes, parts_list)
+                    except Exception:
+                        pass
+                    continue
+
+                # Try to get image from shape (pictures, placeholders with images)
+                try:
+                    image = shape.image
+                    img_bytes = image.blob
+                    content_type = image.content_type
+                    b64 = base64.b64encode(img_bytes).decode('utf-8')
+                    parts_list.append(
+                        f"<div style='text-align:center; margin:12px 0;'>"
+                        f"<img src='data:{content_type};base64,{b64}' "
+                        f"style='max-width:100%; height:auto; border-radius:4px;' />"
+                        f"</div>"
+                    )
+                    # Also show text if shape has both image and text
+                    if hasattr(shape, "text") and shape.text.strip():
+                        parts_list.append(f"<p>{shape.text}</p>")
+                    continue
+                except Exception:
+                    pass
+
+                # Try to get image from shape fill (background fill images)
+                try:
+                    fill = shape.fill
+                    if fill and fill.type is not None:
+                        blip = fill._fill.findall('.//{http://schemas.openxmlformats.org/drawingml/2006/main}blip')
+                        for b in blip:
+                            rId = b.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+                            if rId:
+                                rel = shape.part.rels[rId]
+                                img_bytes = rel.target_part.blob
+                                content_type = rel.target_part.content_type
+                                b64_data = base64.b64encode(img_bytes).decode('utf-8')
+                                parts_list.append(
+                                    f"<div style='text-align:center; margin:12px 0;'>"
+                                    f"<img src='data:{content_type};base64,{b64_data}' "
+                                    f"style='max-width:100%; height:auto; border-radius:4px;' />"
+                                    f"</div>"
+                                )
+                except Exception:
+                    pass
+
+                # Handle tables
+                if shape.has_table:
+                    table = shape.table
+                    parts_list.append("<table>")
+                    for row_idx, row in enumerate(table.rows):
+                        parts_list.append("<tr>")
+                        tag = "th" if row_idx == 0 else "td"
+                        for cell in row.cells:
+                            parts_list.append(f"<{tag}>{cell.text}</{tag}>")
+                        parts_list.append("</tr>")
+                    parts_list.append("</table>")
+                # Handle text
+                elif hasattr(shape, "text") and shape.text.strip():
+                    parts_list.append(f"<p>{shape.text}</p>")
+
+        for i, slide in enumerate(prs.slides, 1):
+            html_parts.append(f"<div class='slide' id='slide-{i}'>")
+            html_parts.append(f"<h2>Slide {i}</h2>")
+
+            # Extract slide background image
+            try:
+                bg = slide.background
+                bg_fill = bg.fill
+                if bg_fill._fill is not None:
+                    blips = bg_fill._fill.findall('.//{http://schemas.openxmlformats.org/drawingml/2006/main}blip')
+                    for b in blips:
+                        rId = b.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+                        if rId:
+                            rel = slide.part.rels[rId]
+                            img_bytes = rel.target_part.blob
+                            content_type = rel.target_part.content_type
+                            b64_data = base64.b64encode(img_bytes).decode('utf-8')
+                            html_parts.append(
+                                f"<div style='text-align:center; margin:12px 0;'>"
+                                f"<img src='data:{content_type};base64,{b64_data}' "
+                                f"style='max-width:100%; height:auto; border-radius:4px; "
+                                f"box-shadow: 0 2px 8px rgba(0,0,0,0.1);' />"
+                                f"</div>"
+                            )
+            except Exception:
+                pass
+
+            # Extract all shapes recursively
+            _extract_shapes(slide.shapes, html_parts)
+
+            html_parts.append("</div>")
+
+        html_parts.append("</div>")
+        return "\n".join(html_parts)
+    
+    def _xlsx_to_html(self, file_path):
+        """Convert XLSX to HTML table."""
+        try:
+            import openpyxl
+        except ImportError:
+            return "<p>openpyxl not installed. Run: pip install openpyxl</p>"
+        
+        wb = openpyxl.load_workbook(file_path)
+        html_parts = []
+        
+        for sheet_name in wb.sheetnames:
+            sheet = wb[sheet_name]
+            html_parts.append(f"<h2>{sheet_name}</h2>")
+            html_parts.append("<table border='1' style='border-collapse: collapse;'>")
+            
+            for row in sheet.iter_rows(values_only=True):
+                html_parts.append("<tr>")
+                for cell in row:
+                    if cell is not None:
+                        html_parts.append(f"<td style='padding: 5px;'>{cell}</td>")
+                    else:
+                        html_parts.append("<td style='padding: 5px;'></td>")
+                html_parts.append("</tr>")
+            
+            html_parts.append("</table>")
+        
+        return "\n".join(html_parts)
+    
+    # NOTE: _docx_to_pdf / _pptx_to_pdf / _xlsx_to_pdf are no longer used.
+    # All office-to-PDF conversion now goes through _libreoffice_to_pdf above.
+    # Kept as a commented-out fallback reference only.
+
+    def get_relevant_context(self, query, document_text, max_chars=4000):
+        """Return the most query-relevant portion of the document."""
+        query_words = set(re.findall(r"\\w+", query.lower()))
+        if not query_words:
+            return document_text[:max_chars]
+ 
+        chunks = re.split(r"--- Page \\d+ ---", document_text)
+        chunks = [c.strip() for c in chunks if c.strip()]
+        if not chunks:
+            return document_text[:max_chars]
+ 
+        scored = sorted(
+            [(len(set(re.findall(r"\\w+", c.lower())) & query_words), c) for c in chunks],
+            key=lambda x: x[0], reverse=True
+        )
+ 
+        context = ""
+        for _, chunk in scored:
+            if len(context) + len(chunk) > max_chars:
+                break
+            context += chunk + "\\n\\n"
+        return context.strip() or document_text[:max_chars]
+ 
+ 
+class YouTubeProcessor:
+    """Fetch and process YouTube video transcripts."""
+ 
+    def extract_video_id(self, url: str):
+        return extract_youtube_video_id(url)
+ 
+    def get_transcript(self, video_id: str):
+        """
+        Returns (transcript_text, video_title_or_None).
+        Raises RuntimeError on failure.
+        Compatible with youtube-transcript-api v0.x (dict) and v1.x (object attributes).
+        """
+        try:
+            from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
+        except ImportError:
+            raise RuntimeError(
+                "youtube-transcript-api is not installed. "
+                "Run: pip install youtube-transcript-api"
+            )
+
+        # v1.x uses an instance; v0.x used class methods — detect and handle both
+        transcript_list = None
+        api = YouTubeTranscriptApi()  # v1.x instance (no-op for v0.x if present)
+
+        try:
+            # v1.x: api.fetch(); v0.x: YouTubeTranscriptApi.get_transcript()
+            if hasattr(api, 'fetch'):
+                transcript_list = api.fetch(video_id)
+            else:
+                transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        except TranscriptsDisabled:
+            raise RuntimeError("This video has captions disabled.")
+        except NoTranscriptFound:
+            # Try auto-generated captions in any available language
+            try:
+                if hasattr(api, 'list'):
+                    tl = api.list(video_id)
+                else:
+                    tl = YouTubeTranscriptApi.list_transcripts(video_id)
+                # Prefer English auto-generated, fall back to first available
+                try:
+                    transcript_list = tl.find_generated_transcript(["en"]).fetch()
+                except Exception:
+                    transcript_list = next(iter(tl)).fetch()
+            except Exception:
+                raise RuntimeError(
+                    "No transcript available for this video. "
+                    "Only videos with captions (auto or manual) are supported."
+                )
+        except Exception as e:
+            raise RuntimeError(f"Could not fetch transcript: {e}")
+
+        # Build timestamped text.
+        # v0.x returns list-of-dicts; v1.x returns iterable of snippet objects.
+        lines = []
+        for entry in transcript_list:
+            if isinstance(entry, dict):
+                start = entry["start"]
+                text  = entry["text"]
+            else:
+                # v1.x object — attributes .start and .text
+                start = entry.start
+                text  = entry.text
+            mins = int(start // 60)
+            secs = int(start % 60)
+            lines.append(f"[{mins:02d}:{secs:02d}] {text}")
+
+        transcript_text = "\n".join(lines)
+        return transcript_text, None   # title fetching requires a separate API key
+ 
+ 
+class AIAssistant:
+ 
+    def __init__(self):
+        self._api_key = os.getenv("GROQ_API_KEY")
+        self._client  = None
+ 
+    @property
+    def client(self):
+        if self._client is None and self._api_key:
+            self._client = Groq(api_key=self._api_key)
+        return self._client
+ 
+    # ── Answer with smart context ────────────────────────────
+    def answer_question(self, query, document_text):
+        if not self.client:
+            return "Groq API key not configured.", None
+        try:
+            proc    = DocumentProcessor()
+            context = proc.get_relevant_context(query, document_text, 4000)
+            resp    = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system",
+                     "content": (
+                         "You are a helpful educational assistant. Answer based on the "
+                         "document/transcript context. Cite page numbers or timestamps "
+                         "when identifiable from markers like --- Page N --- or [MM:SS]."
+                     )},
+                    {"role": "user",
+                     "content": f"Context:\\n{context}\\n\\nQuestion: {query}\\n\\nProvide a detailed and comprehensive answer using markdown formatting (bolding, lists, etc) with a citation if possible."},
+                ],
+                model="llama-3.3-70b-versatile",
+                temperature=0.6,
+                max_tokens=1500,
+            )
+            answer    = resp.choices[0].message.content
+            page_match = re.search(r"[Pp]age\\s+(\\d+)", answer)
+            page_ref   = int(page_match.group(1)) if page_match else None
+            return answer, page_ref
+        except Exception as e:
+            return f"Error: {e}", None
+ 
+    # ── Explain selected text ────────────────────────────────
+    def explain_text(self, selected_text, document_context=""):
+        if not self.client:
+            return "Groq API key not configured."
+        try:
+            resp = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system",
+                     "content": "Explain the given text clearly and comprehensively. Use examples where helpful and format your reply beautifully using markdown features (like bolding and bullet points)."},
+                    {"role": "user",
+                     "content": f"Text:\n{selected_text[:2000]}]\n\nContext:\n{document_context[:1200]}\n\nDetailed Explanation:"},
+                ],
+                model="llama-3.3-70b-versatile",
+                temperature=0.7, max_tokens=1200,
+            )
+            return resp.choices[0].message.content
+        except Exception as e:
+            return f"Error: {e}"
+ 
+    # ── Flashcards ────────────────────────────────────────────
+    def generate_flashcards(self, text, count=5):
+        if not self.client:
+            return []
+        try:
+            resp = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system",
+                     "content": "Create educational flashcards. Respond ONLY with a valid JSON array of objects, each with \"front\" (question) and \"back\" (answer) keys. No markdown, no explanation."},
+                    {"role": "user",
+                     "content": f"Create exactly {count} flashcards from:\n\n{text[:2500]}"},
+                ],
+                model="llama-3.3-70b-versatile",
+                temperature=0.8, max_tokens=900,
+            )
+            raw  = re.sub(r"```[a-z]*", "", resp.choices[0].message.content).strip().strip("`")
+            data = json.loads(raw)
+            if isinstance(data, list):
+                return [{"front": str(d.get("front","")), "back": str(d.get("back",""))}
+                        for d in data if d.get("front") and d.get("back")][:count]
+        except Exception as e:
+            print(f"Flashcard error: {e}")
+        return []
+ 
+    # ── MCQs ──────────────────────────────────────────────────
+    def generate_mcqs(self, text, count=3):
+        if not self.client:
+            return []
+        try:
+            resp = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system",
+                     "content": ('Create MCQs. Respond ONLY with a valid JSON array. Each object must have: '
+                                 '"question", "option_a", "option_b", "option_c", "option_d", '
+                                 '"correct_answer" (A/B/C/D), "explanation". No markdown.')},
+                    {"role": "user",
+                     "content": f"Create exactly {count} MCQs from:\\n\\n{text[:2500]}"},
+                ],
+                model="llama-3.3-70b-versatile",
+                temperature=0.7, max_tokens=1200,
+            )
+            raw  = re.sub(r"```[a-z]*", "", resp.choices[0].message.content).strip().strip("`")
+            data = json.loads(raw)
+            if isinstance(data, list):
+                return [{
+                    "question":       str(d.get("question","")),
+                    "option_a":       str(d.get("option_a","")),
+                    "option_b":       str(d.get("option_b","")),
+                    "option_c":       str(d.get("option_c","")),
+                    "option_d":       str(d.get("option_d","")),
+                    "correct_answer": str(d.get("correct_answer","A")).upper()[0],
+                    "explanation":    str(d.get("explanation","")),
+                } for d in data if d.get("question")][:count]
+        except Exception as e:
+            print(f"MCQ error: {e}")
+        return []
+ 
+    # ── Short questions ────────────────────────────────────────
+    def generate_short_questions(self, text, count=5):
+        if not self.client:
+            return []
+        try:
+            resp = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system",
+                     "content": "Create short-answer questions. Respond ONLY with a valid JSON array of objects with \"question\" and \"answer\" keys. No markdown."},
+                    {"role": "user",
+                     "content": f"Create exactly {count} questions from:\\n\\n{text[:2500]}"},
+                ],
+                model="llama-3.3-70b-versatile",
+                temperature=0.7, max_tokens=900,
+            )
+            raw  = re.sub(r"```[a-z]*", "", resp.choices[0].message.content).strip().strip("`")
+            data = json.loads(raw)
+            if isinstance(data, list):
+                return [{"question": str(d.get("question","")), "answer": str(d.get("answer",""))}
+                        for d in data if d.get("question") and d.get("answer")][:count]
+        except Exception as e:
+            print(f"Short question error: {e}")
+        return []

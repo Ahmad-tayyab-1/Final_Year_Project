@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ document.title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            padding: 32px 40px;
+            line-height: 1.7;
+        }
+
+        /* DOCX styles */
+        h1, h2, h3, h4, h5, h6 {
+            color: #0f172a;
+            margin-top: 24px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        h1 { font-size: 26px; border-bottom: 2px solid #6366f1; padding-bottom: 8px; }
+        h2 { font-size: 22px; }
+        h3 { font-size: 18px; }
+
+        p {
+            margin-bottom: 12px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        /* Table styles (XLSX, DOCX tables) */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        thead tr {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        tr:nth-child(even) { background: #f1f5f9; }
+        tr:hover { background: #eef2ff; }
+
+        /* PPTX slide styles */
+        .pptx-viewer { display: flex; flex-direction: column; gap: 24px; }
+        .slide {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 28px 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: box-shadow 0.2s;
+        }
+        .slide:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        .slide h2 {
+            font-size: 16px;
+            color: #6366f1;
+            margin-top: 0;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .slide p { color: #475569; }
+
+        /* Sheet title */
+        h2 {
+            font-size: 18px;
+            color: #6366f1;
+            margin-top: 28px;
+        }
+
+        /* Selection styling */
+        ::selection { background: rgba(99,102,241,0.2); }
+    </style>
+</head>
+<body>
+    {{ html_content|safe }}
+</body>
+</html>
