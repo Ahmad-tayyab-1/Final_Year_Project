@@ -6,520 +6,1114 @@
 <!-- PDF.js core CSS for TextLayer -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 <style>
-/* ── Full-height layout override ──────────────────────────── */
-html, body { 
-    height: 100%; 
-    overflow: hidden;
-    overflow-x: hidden;
-}
+    /* ── Full-height layout override ──────────────────────────── */
+    html,
+    body {
+        height: 100%;
+        overflow: hidden;
+        overflow-x: hidden;
+    }
 
-.app-shell {
-    height: 100vh;
-    padding: 14px 14px 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
+    .app-shell {
+        height: 100vh;
+        padding: 14px 14px 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
 
-/* navbar already has margin-bottom 28px from base — reduce it here */
-.navbar { margin-bottom: 16px; flex-shrink: 0; }
+    /* navbar already has margin-bottom 28px from base — reduce it here */
+    .navbar {
+        margin-bottom: 16px;
+        flex-shrink: 0;
+    }
 
-.alerts-wrap { flex-shrink: 0; }
+    .alerts-wrap {
+        flex-shrink: 0;
+    }
 
-/* page-body fills all remaining height */
-.page-body {
-    flex: 1;
-    min-height: 0;           /* critical: lets flex child shrink */
-    margin-bottom: 14px;
-    display: flex;
-    flex-direction: column;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xl);
-    border: 1px solid var(--border);
-    animation: none;         /* skip the base fadeUp on this page */
-    overflow: hidden;
-}
+    /* page-body fills all remaining height */
+    .page-body {
+        flex: 1;
+        min-height: 0;
+        /* critical: lets flex child shrink */
+        margin-bottom: 14px;
+        display: flex;
+        flex-direction: column;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        border: 1px solid var(--border);
+        animation: none;
+        /* skip the base fadeUp on this page */
+        overflow: hidden;
+    }
 
-/* ── Document top bar ──────────────────────────────────────── */
-.doc-bar {
-    display: flex; align-items: center; gap: 14px;
-    padding: 12px 22px;
-    background: #0d1117;
-    flex-shrink: 0;
-    border-bottom: 1px solid rgba(255,255,255,.07);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-}
-.doc-bar-icon {
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-}
-.doc-bar-icon i { color: white; font-size: 13px; }
-.doc-bar-title {
-    flex: 1;
-    font-size: 13px; font-weight: 600;
-    color: #e2e8f0;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.doc-bar-meta { font-size: 11px; color: #475569; margin-left: 8px; }
-.doc-bar-actions { display: flex; gap: 7px; flex-shrink: 0; }
-.bar-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 12px;
-    border-radius: 7px;
-    font-size: 11px; font-weight: 600;
-    border: 1px solid rgba(255,255,255,.09);
-    background: rgba(255,255,255,.06);
-    color: #cbd5e1;
-    cursor: pointer;
-    transition: all .2s var(--ease);
-    white-space: nowrap;
-}
-.bar-btn:hover { background: rgba(99,102,241,.3); border-color: rgba(99,102,241,.5); }
-.bar-btn i { font-size: 10px; }
+    /* ── Document top bar ──────────────────────────────────────── */
+    .doc-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 22px;
+        background: #0d1117;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, .07);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
 
-/* ── Split view ────────────────────────────────────────────── */
-.split {
-    display: flex;
-    flex: 1;
-    min-height: 0;          /* critical: must be 0, not a vh value */
-    overflow: hidden;
-}
+    .doc-bar-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
 
-/* ── Left panel ────────────────────────────────────────────── */
-.panel-left {
-    display: flex; flex-direction: column;
-    width: 45%; min-width: 350px; max-width: 600px;
-    flex-shrink: 0;
-    background: white;
-    border-right: 1px solid var(--border);
-    overflow: hidden;    /* clips content; children scroll internally */
-    min-height: 0;       /* prevent flex blowout */
-}
+    .doc-bar-icon i {
+        color: white;
+        font-size: 13px;
+    }
 
-/* Tab bar */
-.tab-bar {
-    display: flex;
-    background: #f8fafc;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    overflow-x: auto;
-}
-.tab-bar::-webkit-scrollbar { height: 0; }
-.tab-btn {
-    flex: 1; min-width: 72px;
-    padding: 11px 6px;
-    border: none; background: transparent;
-    cursor: pointer;
-    font-size: 11px; font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--text-muted);
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    border-bottom: 2px solid transparent;
-    transition: all .2s var(--ease);
-}
-.tab-btn i { font-size: 14px; }
-.tab-btn:hover { color: var(--accent); background: rgba(99,102,241,.04); }
-.tab-btn.active { color: var(--accent); background: white; border-bottom-color: var(--accent); }
+    .doc-bar-title {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+        color: #e2e8f0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-/* Tab panes */
-.tab-pane { display: none; flex: 1; flex-direction: column; overflow: hidden; min-height: 0; }
-.tab-pane.active { display: flex; }
+    .doc-bar-meta {
+        font-size: 11px;
+        color: #475569;
+        margin-left: 8px;
+    }
 
-/* ── Chat ──────────────────────────────────────────────────── */
-.chat-feed {
-    flex: 1; min-height: 0;
-    overflow-y: auto;
-    padding: 20px 16px;
-    display: flex; flex-direction: column; gap: 14px;
-}
-.chat-empty {
-    margin: auto; text-align: center;
-    color: var(--text-muted); padding: 32px 16px;
-}
-.chat-empty i { font-size: 32px; color: var(--border-2); margin-bottom: 10px; display: block; }
-.chat-empty strong { display: block; font-size: 14px; color: var(--text-soft); margin-bottom: 5px; }
-.chat-empty p { font-size: 13px; line-height: 1.6; }
+    .doc-bar-actions {
+        display: flex;
+        gap: 7px;
+        flex-shrink: 0;
+    }
 
-.msg-row { display: flex; gap: 8px; animation: fadeUp .3s var(--ease-spring) both; }
-.msg-row.user { flex-direction: row-reverse; }
-.msg-avatar {
-    width: 28px; height: 28px; border-radius: 7px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; align-self: flex-end; font-size: 11px;
-}
-.msg-avatar.ai  { background: linear-gradient(135deg,var(--accent),var(--accent-2)); color:white; }
-.msg-avatar.user{ background: var(--ink); color:white; }
+    .bar-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 7px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, .09);
+        background: rgba(255, 255, 255, .06);
+        color: #cbd5e1;
+        cursor: pointer;
+        transition: all .2s var(--ease);
+        white-space: nowrap;
+    }
 
-.msg-bubble {
-    max-width: 84%; padding: 11px 14px;
-    border-radius: 13px; font-size: 13px; line-height: 1.65;
-}
-.msg-row.user .msg-bubble {
-    background: linear-gradient(135deg,var(--accent),var(--accent-2));
-    color: white; border-bottom-right-radius: 3px;
-}
-.msg-row.ai .msg-bubble {
-    background: #f1f5f9; color: var(--text);
-    border-bottom-left-radius: 3px; white-space: pre-wrap;
-}
-.cite-chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.2);
-    color: var(--accent); padding: 2px 8px;
-    border-radius: 5px; font-size: 10px; font-weight: 700;
-    margin-top: 7px; cursor: pointer;
-    transition: background .2s;
-}
-.cite-chip:hover { background: rgba(99,102,241,.2); }
+    .bar-btn:hover {
+        background: rgba(99, 102, 241, .3);
+        border-color: rgba(99, 102, 241, .5);
+    }
 
-.typing-dot {
-    width: 6px; height: 6px; background: #94a3b8;
-    border-radius: 50%; display: inline-block;
-    animation: typingBounce 1.2s .1s infinite;
-}
-.typing-dot:nth-child(2) { animation-delay:.25s; }
-.typing-dot:nth-child(3) { animation-delay:.4s; }
-@keyframes typingBounce {
-    0%,60%,100% { transform:translateY(0); opacity:.6; }
-    30%          { transform:translateY(-5px); opacity:1; }
-}
+    .bar-btn i {
+        font-size: 10px;
+    }
 
-.chat-input-area {
-    padding: 12px 14px;
-    border-top: 1px solid var(--border);
-    background: white; flex-shrink: 0;
-}
-.chat-input-row { display: flex; gap: 7px; align-items: center; }
-.chat-input {
-    flex: 1; padding: 10px 14px;
-    border: 1.5px solid var(--border); border-radius: 9px;
-    font-size: 13px; font-family: 'DM Sans',sans-serif;
-    color: var(--text); outline: none;
-    background: var(--surface-2);
-    transition: border-color .2s;
-}
-.chat-input:focus {
-    border-color: var(--accent); background: white;
-    box-shadow: 0 0 0 3px rgba(99,102,241,.1);
-}
-.chat-send {
-    width: 38px; height: 38px;
-    background: linear-gradient(135deg,var(--accent),var(--accent-2));
-    color: white; border: none; border-radius: 9px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 14px; flex-shrink: 0;
-    box-shadow: 0 2px 8px var(--accent-glow);
-    transition: all .2s var(--ease-spring);
-}
-.chat-send:hover { transform: translateY(-2px) scale(1.05); }
+    /* ── Split view ────────────────────────────────────────────── */
+    .split {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        /* critical: must be 0, not a vh value */
+        overflow: hidden;
+    }
 
-/* ── Pane shared ───────────────────────────────────────────── */
-.pane-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; }
-.pane-actions {
-    padding: 11px 14px;
-    border-bottom: 1px solid var(--border);
-    display: flex; gap: 7px;
-    flex-shrink: 0; flex-wrap: wrap;
-    background: #f8fafc;
-}
-.pane-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 13px;
-    background: white; border: 1px solid var(--border);
-    border-radius: 7px; font-size: 12px; font-weight: 600;
-    font-family: 'DM Sans',sans-serif; color: var(--text-soft);
-    cursor: pointer; transition: all .2s var(--ease);
-}
-.pane-btn:hover { border-color: var(--accent); color: var(--accent); background: #eef2ff; }
-.pane-btn.primary {
-    background: linear-gradient(135deg,var(--accent),var(--accent-2));
-    color: white; border-color: transparent;
-    box-shadow: 0 2px 8px var(--accent-glow);
-}
-.pane-btn.primary:hover { transform: translateY(-1px); }
-.pane-btn i { font-size: 11px; }
+    /* ── Left panel ────────────────────────────────────────────── */
+    .panel-left {
+        display: flex;
+        flex-direction: column;
+        width: 45%;
+        min-width: 350px;
+        max-width: 600px;
+        flex-shrink: 0;
+        background: white;
+        border-right: 1px solid var(--border);
+        overflow: hidden;
+        /* clips content; children scroll internally */
+        min-height: 0;
+        /* prevent flex blowout */
+    }
 
-.pane-empty {
-    text-align: center; padding: 40px 16px; color: var(--text-muted);
-}
-.pane-empty i { font-size: 28px; color: var(--border-2); display: block; margin-bottom: 10px; }
-.pane-empty p { font-size: 13px; }
+    /* Tab bar */
+    .tab-bar {
+        display: flex;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        overflow-x: auto;
+    }
 
-.skeleton-bar {
-    background: linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
-    border-radius: 4px; height: 11px; margin-bottom: 9px;
-}
-@keyframes shimmer { to { background-position:-200% 0; } }
+    .tab-bar::-webkit-scrollbar {
+        height: 0;
+    }
 
-/* ── Flashcards ────────────────────────────────────────────── */
-.fc-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 14px; }
-.fc-wrap { perspective: 1200px; height: 160px; cursor: pointer; }
-.fc-inner {
-    position: relative; width: 100%; height: 100%;
-    transform-style: preserve-3d;
-    transition: transform .55s cubic-bezier(.4,.2,.2,1);
-    border-radius: 11px;
-}
-.fc-wrap.flipped .fc-inner { transform: rotateY(180deg); }
-.fc-face {
-    position: absolute; inset: 0; backface-visibility: hidden;
-    border-radius: 11px; padding: 18px;
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; text-align: center;
-    font-size: 12px; line-height: 1.5;
-}
-.fc-front {
-    background: linear-gradient(135deg,var(--accent),var(--accent-2));
-    color: white; box-shadow: 0 4px 14px var(--accent-glow);
-}
-.fc-front::after {
-    content: 'Q'; position: absolute; top: 8px; left: 10px;
-    font-size: 9px; font-weight: 800; letter-spacing: .1em; opacity: .55;
-}
-.fc-back {
-    background: white; border: 1.5px solid var(--border);
-    color: var(--text); box-shadow: var(--shadow);
-    transform: rotateY(180deg);
-}
-.fc-back::after {
-    content: 'A'; position: absolute; top: 8px; left: 10px;
-    font-size: 9px; font-weight: 800; letter-spacing: .1em;
-    color: var(--accent); opacity: .7;
-}
+    .tab-btn {
+        flex: 1;
+        min-width: 72px;
+        padding: 11px 6px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--text-muted);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        border-bottom: 2px solid transparent;
+        transition: all .2s var(--ease);
+    }
 
-/* ── MCQs ──────────────────────────────────────────────────── */
-.mcq-list { display: flex; flex-direction: column; gap: 14px; }
-.mcq-card {
-    background: white; border: 1.5px solid var(--border);
-    border-radius: 12px; padding: 18px;
-    transition: border-color .2s;
-}
-.mcq-card:hover { border-color: rgba(99,102,241,.3); }
-.mcq-q { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 12px; line-height: 1.5; }
-.mcq-q span {
-    display: inline-block;
-    background: linear-gradient(135deg,var(--accent),var(--accent-2));
-    color: white; padding: 1px 7px; border-radius: 4px;
-    font-size: 10px; margin-right: 7px; vertical-align: middle;
-}
-.mcq-opt {
-    padding: 10px 12px; border: 1.5px solid var(--border);
-    border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 500;
-    color: var(--text); margin-bottom: 7px;
-    transition: all .2s var(--ease);
-    display: flex; align-items: center; gap: 9px; user-select: none;
-}
-.mcq-opt-letter {
-    width: 20px; height: 20px; border-radius: 4px;
-    background: var(--surface-2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 800; color: var(--text-soft); flex-shrink: 0;
-}
-.mcq-opt:hover:not(.answered) { border-color: var(--accent); background: #eef2ff; }
-.mcq-opt:hover:not(.answered) .mcq-opt-letter { background: var(--accent); color: white; }
-.mcq-opt.correct { border-color: var(--success); background: #ecfdf5; pointer-events: none; }
-.mcq-opt.correct .mcq-opt-letter { background: var(--success); color: white; }
-.mcq-opt.wrong   { border-color: var(--danger);  background: #fef2f2; pointer-events: none; }
-.mcq-opt.wrong   .mcq-opt-letter { background: var(--danger);  color: white; }
-.mcq-explain {
-    display: none; margin-top: 10px; padding: 10px 12px;
-    background: #eff6ff; border-left: 3px solid var(--accent);
-    border-radius: 0 7px 7px 0; font-size: 12px; color: #1e40af; line-height: 1.6;
-}
+    .tab-btn i {
+        font-size: 14px;
+    }
 
-/* ── Short Qs ──────────────────────────────────────────────── */
-.sq-list { display: flex; flex-direction: column; gap: 12px; }
-.sq-card { background: white; border: 1.5px solid var(--border); border-radius: 11px; overflow: hidden; }
-.sq-card:hover { border-color: rgba(99,102,241,.3); }
-.sq-q {
-    padding: 12px 14px; font-size: 13px; font-weight: 700;
-    color: var(--ink); background: var(--surface-2);
-    border-bottom: 1px solid var(--border);
-    display: flex; gap: 9px; align-items: flex-start;
-}
-.sq-q-icon { color: var(--accent); font-size: 12px; margin-top: 2px; flex-shrink: 0; }
-.sq-a { padding: 12px 14px; font-size: 12px; color: var(--text-soft); line-height: 1.65; border-left: 3px solid var(--accent); }
+    .tab-btn:hover {
+        color: var(--accent);
+        background: rgba(99, 102, 241, .04);
+    }
 
-/* ── Right panel ───────────────────────────────────────────── */
-.panel-right {
-    flex: 1; min-width: 0; min-height: 0;
-    display: flex; flex-direction: column;
-    background: #1a1f2e;
-    overflow: hidden;
-}
+    .tab-btn.active {
+        color: var(--accent);
+        background: white;
+        border-bottom-color: var(--accent);
+    }
 
-.viewer-toolbar {
-    padding: 9px 18px;
-    background: #252d3d;
-    border-bottom: 1px solid rgba(255,255,255,.07);
-    display: flex; align-items: center; gap: 10px;
-    flex-shrink: 0;
-}
-.viewer-toolbar-label {
-    font-size: 11px; color: #64748b; font-weight: 600;
-    display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: .05em;
-}
-.viewer-toolbar-label i { color: var(--accent); }
-.viewer-toolbar-actions { margin-left: auto; display: flex; gap: 7px; }
+    /* Tab panes */
+    .tab-pane {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        overflow: hidden;
+        min-height: 0;
+    }
 
-/* Native PDF embed viewer */
-.pdf-iframe-wrap {
-    flex: 1; min-height: 0;
-    display: flex; flex-direction: column;
-    background: #2c3649;
-    height: 100%;
-}
-.pdf-iframe-wrap embed {
-    width: 100%;
-    height: 100%;
-    min-height: 75vh;
-    border: none;
-    display: block;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
+    .tab-pane.active {
+        display: flex;
+    }
 
-/* Text fallback (non-PDF docs) */
-.text-scroll {
-    flex: 1; min-height: 0; overflow-y: auto;
-    padding: 24px ; background: #2c3649;
-    max-height: 90vh;
-}
-.doc-paper {
-    background: white; max-width: 900px; margin: 0 auto;
-    padding: 49px 48px; border-radius: 3px;
-    box-shadow: 0 4px 24px rgba(0,0,0,.5);
-    font-size: 14px; line-height: 1.85;
-    color: #1e293b; white-space: pre-wrap; word-break: break-word;
-    min-height: 70vh;
-}
-.doc-paper::selection { background: rgba(250,204,21,.45); }
+    /* ── Chat ──────────────────────────────────────────────────── */
+    .chat-feed {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
 
-/* YouTube embed */
-.yt-panel {
-    flex: 1; min-height: 0;
-    display: flex; flex-direction: column;
-    overflow: hidden;
-    max-height: 90vh;
-    background: #000;
-}
-.yt-embed-wrap {
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    background: #000;
-}
-.yt-embed-wrap iframe {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    border: none;
-}
-.yt-transcript {
-    display: none;
-}
-.yt-transcript h4 {
-    font-size: 12px; font-weight: 700; letter-spacing: .07em;
-    text-transform: uppercase; color: #64748b; margin-bottom: 14px;
-    display: flex; align-items: center; gap: 7px;
-}
-.yt-transcript h4 i { color: var(--accent); }
-.yt-transcript-text {
-    font-size: 13px; color: #94a3b8; line-height: 1.85;
-    white-space: pre-wrap; word-break: break-word;
-}
+    .chat-empty {
+        margin: auto;
+        text-align: center;
+        color: var(--text-muted);
+        padding: 32px 16px;
+    }
 
-/* ── Selection popup ───────────────────────────────────────── */
-.sel-popup {
-    position: fixed; z-index: 9999;
-    background: #0d1117;
-    border: 1px solid rgba(255,255,255,.1);
-    border-radius: 9px; padding: 5px;
-    display: none; gap: 4px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.5);
-    animation: popIn .15s var(--ease-spring) both;
-}
-.sel-popup.visible { display: flex; }
-@keyframes popIn {
-    from { opacity:0; transform: scale(.9) translateY(-4px); }
-    to   { opacity:1; transform: scale(1) translateY(0); }
-}
-.sel-btn {
-    padding: 7px 11px;
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.09);
-    color: #e2e8f0; border-radius: 6px;
-    font-size: 11px; font-weight: 600;
-    font-family: 'DM Sans',sans-serif;
-    cursor: pointer;
-    display: flex; align-items: center; gap: 5px;
-    transition: all .15s; white-space: nowrap;
-}
-.sel-btn:hover { background: rgba(99,102,241,.3); border-color: rgba(99,102,241,.5); }
-.sel-btn i { font-size: 10px; }
+    .chat-empty i {
+        font-size: 32px;
+        color: var(--border-2);
+        margin-bottom: 10px;
+        display: block;
+    }
 
-/* ── Toast ─────────────────────────────────────────────────── */
-.toast-area {
-    position: fixed; bottom: 22px; right: 22px;
-    display: flex; flex-direction: column; gap: 9px; z-index: 99999;
-}
-.toast {
-    display: flex; align-items: center; gap: 9px;
-    background: #0d1117; color: white;
-    padding: 11px 16px; border-radius: 9px;
-    font-size: 12px; font-weight: 500;
-    box-shadow: var(--shadow-xl);
-    border: 1px solid rgba(255,255,255,.09);
-    animation: slideUp .3s var(--ease-spring) both; min-width: 200px;
-}
-.toast.success { border-left: 3px solid var(--success); }
-.toast.error   { border-left: 3px solid var(--danger); }
-.toast i { font-size: 13px; }
-.toast.success i { color: var(--success); }
-.toast.error   i { color: var(--danger); }
-@keyframes slideUp {
-    from { opacity:0; transform: translateY(14px); }
-    to   { opacity:1; transform: translateY(0); }
-}
+    .chat-empty strong {
+        display: block;
+        font-size: 14px;
+        color: var(--text-soft);
+        margin-bottom: 5px;
+    }
 
-/* ── Resize handle ─────────────────────────────────────────── */
-.resize-handle {
-    width: 5px; background: transparent; cursor: col-resize;
-    flex-shrink: 0; transition: background .2s;
-}
-.resize-handle:hover, .resize-handle.dragging { background: rgba(99,102,241,.4); }
+    .chat-empty p {
+        font-size: 13px;
+        line-height: 1.6;
+    }
 
-/* ── Responsive ────────────────────────────────────────────── */
-@media (max-width: 960px) {
-    html, body { overflow: auto; height: auto; }
-    .app-shell { height: auto; overflow: visible; padding-bottom: 20px; }
-    .page-body { height: auto; min-height: 0; flex: none; overflow: visible; }
-    .split { flex-direction: column; height: auto; overflow: visible; min-height: 0; }
-    .panel-left { width: 100%; max-width: 100%; height: 65vh; min-height: 420px; border-right: none; border-bottom: 1px solid var(--border); }
-    .resize-handle { display: none; }
-    .panel-right { height: 70vh; min-height: 400px; }
-    .pdf-scroll { padding: 16px; }
-    .doc-paper { padding: 28px 22px; }
-    .bar-btn span { display: none; }
-    .pdf-iframe-wrap embed { min-height: 500px; }
-}
-@media (max-width: 768px) {
-    html, body { overflow-x: hidden; }
-    .panel-left { min-height: 400px; }
-    .doc-paper { padding: 24px; }
-}
+    .msg-row {
+        display: flex;
+        gap: 8px;
+        animation: fadeUp .3s var(--ease-spring) both;
+    }
 
-/* ── Markdown AI Bubble styles ──────────────────────────── */
-.ai-md p { margin-bottom: 8px; }
-.ai-md p:last-child { margin-bottom: 0; }
-.ai-md ul, .ai-md ol { margin-left: 20px; margin-bottom: 8px; padding-left: 0; }
-.ai-md li { margin-bottom: 4px; }
-.ai-md pre { background: rgba(0,0,0,0.05); padding: 8px; border-radius: 5px; overflow-x: auto; font-size: 11px; }
-.ai-md code { background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 12px; }
+    .msg-row.user {
+        flex-direction: row-reverse;
+    }
+
+    .msg-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        align-self: flex-end;
+        font-size: 11px;
+    }
+
+    .msg-avatar.ai {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+    }
+
+    .msg-avatar.user {
+        background: var(--ink);
+        color: white;
+    }
+
+    .msg-bubble {
+        max-width: 84%;
+        padding: 11px 14px;
+        border-radius: 13px;
+        font-size: 13px;
+        line-height: 1.65;
+    }
+
+    .msg-row.user .msg-bubble {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+        border-bottom-right-radius: 3px;
+    }
+
+    .msg-row.ai .msg-bubble {
+        background: #f1f5f9;
+        color: var(--text);
+        border-bottom-left-radius: 3px;
+        white-space: pre-wrap;
+    }
+
+    .cite-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(99, 102, 241, .1);
+        border: 1px solid rgba(99, 102, 241, .2);
+        color: var(--accent);
+        padding: 2px 8px;
+        border-radius: 5px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-top: 7px;
+        cursor: pointer;
+        transition: background .2s;
+    }
+
+    .cite-chip:hover {
+        background: rgba(99, 102, 241, .2);
+    }
+
+    .typing-dot {
+        width: 6px;
+        height: 6px;
+        background: #94a3b8;
+        border-radius: 50%;
+        display: inline-block;
+        animation: typingBounce 1.2s .1s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+        animation-delay: .25s;
+    }
+
+    .typing-dot:nth-child(3) {
+        animation-delay: .4s;
+    }
+
+    @keyframes typingBounce {
+
+        0%,
+        60%,
+        100% {
+            transform: translateY(0);
+            opacity: .6;
+        }
+
+        30% {
+            transform: translateY(-5px);
+            opacity: 1;
+        }
+    }
+
+    .chat-input-area {
+        padding: 12px 14px;
+        border-top: 1px solid var(--border);
+        background: white;
+        flex-shrink: 0;
+    }
+
+    .chat-input-row {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+    }
+
+    .chat-input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1.5px solid var(--border);
+        border-radius: 9px;
+        font-size: 13px;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--text);
+        outline: none;
+        background: var(--surface-2);
+        transition: border-color .2s;
+    }
+
+    .chat-input:focus {
+        border-color: var(--accent);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, .1);
+    }
+
+    .chat-send {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+        border: none;
+        border-radius: 9px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px var(--accent-glow);
+        transition: all .2s var(--ease-spring);
+    }
+
+    .chat-send:hover {
+        transform: translateY(-2px) scale(1.05);
+    }
+
+    /* ── Pane shared ───────────────────────────────────────────── */
+    .pane-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 16px;
+    }
+
+    .pane-actions {
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        gap: 7px;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        background: #f8fafc;
+    }
+
+    .pane-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 13px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--text-soft);
+        cursor: pointer;
+        transition: all .2s var(--ease);
+    }
+
+    .pane-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #eef2ff;
+    }
+
+    .pane-btn.primary {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .pane-btn.primary:hover {
+        transform: translateY(-1px);
+    }
+
+    .pane-btn i {
+        font-size: 11px;
+    }
+
+    .pane-empty {
+        text-align: center;
+        padding: 40px 16px;
+        color: var(--text-muted);
+    }
+
+    .pane-empty i {
+        font-size: 28px;
+        color: var(--border-2);
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .pane-empty p {
+        font-size: 13px;
+    }
+
+    .skeleton-bar {
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.4s infinite;
+        border-radius: 4px;
+        height: 11px;
+        margin-bottom: 9px;
+    }
+
+    @keyframes shimmer {
+        to {
+            background-position: -200% 0;
+        }
+    }
+
+    /* ── Flashcards ────────────────────────────────────────────── */
+    .fc-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 14px;
+    }
+
+    .fc-wrap {
+        perspective: 1200px;
+        height: 160px;
+        cursor: pointer;
+    }
+
+    .fc-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        transition: transform .55s cubic-bezier(.4, .2, .2, 1);
+        border-radius: 11px;
+    }
+
+    .fc-wrap.flipped .fc-inner {
+        transform: rotateY(180deg);
+    }
+
+    .fc-face {
+        position: absolute;
+        inset: 0;
+        backface-visibility: hidden;
+        border-radius: 11px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .fc-front {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+        box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .fc-front::after {
+        content: 'Q';
+        position: absolute;
+        top: 8px;
+        left: 10px;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .1em;
+        opacity: .55;
+    }
+
+    .fc-back {
+        background: white;
+        border: 1.5px solid var(--border);
+        color: var(--text);
+        box-shadow: var(--shadow);
+        transform: rotateY(180deg);
+    }
+
+    .fc-back::after {
+        content: 'A';
+        position: absolute;
+        top: 8px;
+        left: 10px;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .1em;
+        color: var(--accent);
+        opacity: .7;
+    }
+
+    /* ── MCQs ──────────────────────────────────────────────────── */
+    .mcq-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .mcq-card {
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 18px;
+        transition: border-color .2s;
+    }
+
+    .mcq-card:hover {
+        border-color: rgba(99, 102, 241, .3);
+    }
+
+    .mcq-q {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 12px;
+        line-height: 1.5;
+    }
+
+    .mcq-q span {
+        display: inline-block;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+        padding: 1px 7px;
+        border-radius: 4px;
+        font-size: 10px;
+        margin-right: 7px;
+        vertical-align: middle;
+    }
+
+    .mcq-opt {
+        padding: 10px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 7px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 7px;
+        transition: all .2s var(--ease);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        user-select: none;
+    }
+
+    .mcq-opt-letter {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        background: var(--surface-2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--text-soft);
+        flex-shrink: 0;
+    }
+
+    .mcq-opt:hover:not(.answered) {
+        border-color: var(--accent);
+        background: #eef2ff;
+    }
+
+    .mcq-opt:hover:not(.answered) .mcq-opt-letter {
+        background: var(--accent);
+        color: white;
+    }
+
+    .mcq-opt.correct {
+        border-color: var(--success);
+        background: #ecfdf5;
+        pointer-events: none;
+    }
+
+    .mcq-opt.correct .mcq-opt-letter {
+        background: var(--success);
+        color: white;
+    }
+
+    .mcq-opt.wrong {
+        border-color: var(--danger);
+        background: #fef2f2;
+        pointer-events: none;
+    }
+
+    .mcq-opt.wrong .mcq-opt-letter {
+        background: var(--danger);
+        color: white;
+    }
+
+    .mcq-explain {
+        display: none;
+        margin-top: 10px;
+        padding: 10px 12px;
+        background: #eff6ff;
+        border-left: 3px solid var(--accent);
+        border-radius: 0 7px 7px 0;
+        font-size: 12px;
+        color: #1e40af;
+        line-height: 1.6;
+    }
+
+    /* ── Short Qs ──────────────────────────────────────────────── */
+    .sq-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .sq-card {
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: 11px;
+        overflow: hidden;
+    }
+
+    .sq-card:hover {
+        border-color: rgba(99, 102, 241, .3);
+    }
+
+    .sq-q {
+        padding: 12px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink);
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+    }
+
+    .sq-q-icon {
+        color: var(--accent);
+        font-size: 12px;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    .sq-a {
+        padding: 12px 14px;
+        font-size: 12px;
+        color: var(--text-soft);
+        line-height: 1.65;
+        border-left: 3px solid var(--accent);
+    }
+
+    /* ── Right panel ───────────────────────────────────────────── */
+    .panel-right {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        background: #1a1f2e;
+        overflow: hidden;
+    }
+
+    .viewer-toolbar {
+        padding: 9px 18px;
+        background: #252d3d;
+        border-bottom: 1px solid rgba(255, 255, 255, .07);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .viewer-toolbar-label {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .viewer-toolbar-label i {
+        color: var(--accent);
+    }
+
+    .viewer-toolbar-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 7px;
+    }
+
+    /* Native PDF embed viewer */
+    .pdf-iframe-wrap {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        background: #2c3649;
+        height: 100%;
+    }
+
+    .pdf-iframe-wrap embed {
+        width: 100%;
+        height: 100%;
+        min-height: 75vh;
+        border: none;
+        display: block;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    /* Text fallback (non-PDF docs) */
+    .text-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 24px;
+        background: #2c3649;
+        max-height: 90vh;
+    }
+
+    .doc-paper {
+        background: white;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 49px 48px;
+        border-radius: 3px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, .5);
+        font-size: 14px;
+        line-height: 1.85;
+        color: #1e293b;
+        white-space: pre-wrap;
+        word-break: break-word;
+        min-height: 70vh;
+    }
+
+    .doc-paper::selection {
+        background: rgba(250, 204, 21, .45);
+    }
+
+    /* YouTube embed */
+    .yt-panel {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        max-height: 90vh;
+        background: #000;
+    }
+
+    .yt-embed-wrap {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        background: #000;
+    }
+
+    .yt-embed-wrap iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    .yt-transcript {
+        display: none;
+    }
+
+    .yt-transcript h4 {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .yt-transcript h4 i {
+        color: var(--accent);
+    }
+
+    .yt-transcript-text {
+        font-size: 13px;
+        color: #94a3b8;
+        line-height: 1.85;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    /* ── Selection popup ───────────────────────────────────────── */
+    .sel-popup {
+        position: fixed;
+        z-index: 9999;
+        background: #0d1117;
+        border: 1px solid rgba(255, 255, 255, .1);
+        border-radius: 9px;
+        padding: 5px;
+        display: none;
+        gap: 4px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+        animation: popIn .15s var(--ease-spring) both;
+    }
+
+    .sel-popup.visible {
+        display: flex;
+    }
+
+    @keyframes popIn {
+        from {
+            opacity: 0;
+            transform: scale(.9) translateY(-4px);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .sel-btn {
+        padding: 7px 11px;
+        background: rgba(255, 255, 255, .06);
+        border: 1px solid rgba(255, 255, 255, .09);
+        color: #e2e8f0;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all .15s;
+        white-space: nowrap;
+    }
+
+    .sel-btn:hover {
+        background: rgba(99, 102, 241, .3);
+        border-color: rgba(99, 102, 241, .5);
+    }
+
+    .sel-btn i {
+        font-size: 10px;
+    }
+
+    /* ── Toast ─────────────────────────────────────────────────── */
+    .toast-area {
+        position: fixed;
+        bottom: 22px;
+        right: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        z-index: 99999;
+    }
+
+    .toast {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        background: #0d1117;
+        color: white;
+        padding: 11px 16px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 500;
+        box-shadow: var(--shadow-xl);
+        border: 1px solid rgba(255, 255, 255, .09);
+        animation: slideUp .3s var(--ease-spring) both;
+        min-width: 200px;
+    }
+
+    .toast.success {
+        border-left: 3px solid var(--success);
+    }
+
+    .toast.error {
+        border-left: 3px solid var(--danger);
+    }
+
+    .toast i {
+        font-size: 13px;
+    }
+
+    .toast.success i {
+        color: var(--success);
+    }
+
+    .toast.error i {
+        color: var(--danger);
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(14px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ── Resize handle ─────────────────────────────────────────── */
+    .resize-handle {
+        width: 5px;
+        background: transparent;
+        cursor: col-resize;
+        flex-shrink: 0;
+        transition: background .2s;
+    }
+
+    .resize-handle:hover,
+    .resize-handle.dragging {
+        background: rgba(99, 102, 241, .4);
+    }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 960px) {
+
+        html,
+        body {
+            overflow: auto;
+            height: auto;
+        }
+
+        .app-shell {
+            height: auto;
+            overflow: visible;
+            padding-bottom: 20px;
+        }
+
+        .page-body {
+            height: auto;
+            min-height: 0;
+            flex: none;
+            overflow: visible;
+        }
+
+        .split {
+            flex-direction: column;
+            height: auto;
+            overflow: visible;
+            min-height: 0;
+        }
+
+        .panel-left {
+            width: 100%;
+            max-width: 100%;
+            height: 65vh;
+            min-height: 420px;
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .resize-handle {
+            display: none;
+        }
+
+        .panel-right {
+            height: 70vh;
+            min-height: 400px;
+        }
+
+        .pdf-scroll {
+            padding: 16px;
+        }
+
+        .doc-paper {
+            padding: 28px 22px;
+        }
+
+        .bar-btn span {
+            display: none;
+        }
+
+        .pdf-iframe-wrap embed {
+            min-height: 500px;
+        }
+    }
+
+    @media (max-width: 768px) {
+
+        html,
+        body {
+            overflow-x: hidden;
+        }
+
+        .panel-left {
+            min-height: 400px;
+        }
+
+        .doc-paper {
+            padding: 24px;
+        }
+    }
+
+    /* ── Markdown AI Bubble styles ──────────────────────────── */
+    .ai-md p {
+        margin-bottom: 8px;
+    }
+
+    .ai-md p:last-child {
+        margin-bottom: 0;
+    }
+
+    .ai-md ul,
+    .ai-md ol {
+        margin-left: 20px;
+        margin-bottom: 8px;
+        padding-left: 0;
+    }
+
+    .ai-md li {
+        margin-bottom: 4px;
+    }
+
+    .ai-md pre {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 8px;
+        border-radius: 5px;
+        overflow-x: auto;
+        font-size: 11px;
+    }
+
+    .ai-md code {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+    }
 </style>
 {% endblock %}
 
@@ -596,8 +1190,7 @@ html, body {
             <div class="chat-input-area">
                 <form class="chat-input-row" id="chatForm">
                     {% csrf_token %}
-                    <input type="text" class="chat-input" id="chatInput"
-                           placeholder="Ask about the {% if document.file_type == 'youtube' %}video{% else %}document{% endif %}..." autocomplete="off">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about the {% if document.file_type == 'youtube' %}video{% else %}document{% endif %}..." autocomplete="off">
                     <button type="submit" class="chat-send"><i class="fas fa-paper-plane"></i></button>
                 </form>
             </div>
@@ -725,12 +1318,7 @@ html, body {
         <div class="yt-panel">
             <div class="yt-embed-wrap">
                 {% if document.youtube_video_id %}
-                <iframe id="ytFrame"
-                        src="https://www.youtube.com/embed/{{ document.youtube_video_id }}?rel=0&modestbranding=1"
-                        data-video-id="{{ document.youtube_video_id }}"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"
-                        allowfullscreen
-                        referrerpolicy="no-referrer-when-downgrade">
+                <iframe id="ytFrame" src="https://www.youtube.com/embed/{{ document.youtube_video_id }}?rel=0&modestbranding=1" data-video-id="{{ document.youtube_video_id }}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share" allowfullscreen referrerpolicy="no-referrer-when-downgrade">
                 </iframe>
                 {% else %}
                 <div style="color:#94a3b8; padding:24px; text-align:center;">
@@ -761,18 +1349,16 @@ html, body {
         {% elif document.file_type in 'pptx,xlsx' %}
         <!-- PPTX/XLSX: Server-side HTML viewer -->
         <div style="flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden;">
-            <iframe src="{% url 'documents:serve_document_html' document.id %}"
-                    style="flex:1; width:100%; border:none; background:white; min-height:0;"
-                    id="officeFrame"></iframe>
+            <iframe src="{% url 'documents:serve_document_html' document.id %}" style="flex:1; width:100%; border:none; background:white; min-height:0;" id="officeFrame"></iframe>
         </div>
 
         {% else %}
         <div class="text-scroll">
             <div class="doc-paper">{{ document.text_content }}</div>
         </div>
-        {% endif %}        
-       
-        
+        {% endif %}
+
+
     </div>
 </div>
 
@@ -794,513 +1380,521 @@ html, body {
 <!-- Marked.js for Markdown parsing -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <!-- docx-preview for full-fidelity DOCX rendering -->
-<script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx-preview@0.1.14/dist/docx-preview.min.js"></script>
 
 <script>
-/* ── Config ───────────────────────────────────────────────── */
-const CSRF = '{{ csrf_token }}';
-const URLS = {
-    chat:       "{% url 'documents:chat' document.id %}",
-    explain:    "{% url 'documents:explain_selection' document.id %}",
-    flashcards: "{% url 'documents:create_flashcards' document.id %}",
-    mcqs:       "{% url 'documents:create_mcqs' document.id %}",
-    questions:  "{% url 'documents:create_short_questions' document.id %}",
-};
-const FILE_TYPE = "{{ document.file_type }}";
-const FILE_URL  = "{% if document.file %}{{ document.file.url }}{% endif %}";
-const SOURCE_URL = "{{ document.source_url|default:'' }}";
+    /* ── Config ───────────────────────────────────────────────── */
+    const CSRF = '{{ csrf_token }}';
+    const URLS = {
+        chat: "{% url 'documents:chat' document.id %}",
+        explain: "{% url 'documents:explain_selection' document.id %}",
+        flashcards: "{% url 'documents:create_flashcards' document.id %}",
+        mcqs: "{% url 'documents:create_mcqs' document.id %}",
+        questions: "{% url 'documents:create_short_questions' document.id %}",
+    };
+    const FILE_TYPE = "{{ document.file_type }}";
+    const FILE_URL = "{% if document.file %}{{ document.file.url }}{% endif %}";
+    const SOURCE_URL = "{{ document.source_url|default:'' }}";
 
-/* ── YouTube: transcript selection ───────────────────────── */
-{% if document.file_type == 'youtube' %}
-(function() {
-    document.getElementById('transcriptText')?.addEventListener('mouseup', handleTextSelection);
-})();
-{% endif %}
+    /* ── YouTube: transcript selection ───────────────────────── */
+    {% if document.file_type == 'youtube' %}
+    (function () {
+        document.getElementById('transcriptText')?.addEventListener('mouseup', handleTextSelection);
+    })();
+    {% endif %}
 
-/* ── Text selection + popup ───────────────────────────────── */
-let selectedText = '';
-const selPopup   = document.getElementById('selPopup');
+    /* ── Text selection + popup ───────────────────────────────── */
+    let selectedText = '';
+    const selPopup = document.getElementById('selPopup');
 
-function handleTextSelection(e) {
-    const sel = window.getSelection();
-    selectedText = (sel?.toString() || '').trim();
-    console.log('Text selected:', selectedText); // DEBUG
-    if (selectedText.length > 4) {
-        const r = sel.getRangeAt(0).getBoundingClientRect();
-        const x = Math.min(r.left, window.innerWidth - 340);
-        const y = r.bottom + window.scrollY + 8;
-        selPopup.style.left = x + 'px';
-        selPopup.style.top  = y + 'px';
-        selPopup.classList.add('visible');
-        console.log('Popup shown at:', x, y); // DEBUG
-    } else {
-        selPopup.classList.remove('visible');
-    }
-}
-
-// Also wire doc-paper (non-PDF)
-document.getElementById('docPaper')?.addEventListener('mouseup', handleTextSelection);
-
-// Global mouseup listener to detect selections anywhere
-document.addEventListener('mouseup', () => {
-    const sel = window.getSelection();
-    const selectedText_temp = (sel?.toString() || '').trim();
-    console.log('Global mouseup - selected text:', selectedText_temp); // DEBUG
-    if (selectedText_temp.length > 4) {
-        selectedText = selectedText_temp;
-        console.log('Text captured:', selectedText); // DEBUG
-        try {
+    function handleTextSelection(e) {
+        const sel = window.getSelection();
+        selectedText = (sel?.toString() || '').trim();
+        console.log('Text selected:', selectedText); // DEBUG
+        if (selectedText.length > 4) {
             const r = sel.getRangeAt(0).getBoundingClientRect();
             const x = Math.min(r.left, window.innerWidth - 340);
             const y = r.bottom + window.scrollY + 8;
             selPopup.style.left = x + 'px';
-            selPopup.style.top  = y + 'px';
+            selPopup.style.top = y + 'px';
             selPopup.classList.add('visible');
-        } catch(e) {
-            console.log('Error showing popup:', e); // DEBUG
+            console.log('Popup shown at:', x, y); // DEBUG
+        } else {
+            selPopup.classList.remove('visible');
         }
     }
-});
 
-// Clipboard listener to detect text copied from PDF viewer
-document.addEventListener('copy', (e) => {
-    try {
-        const copiedText = e.clipboardData?.getData('text/plain') || '';
-        console.log('Text copied from clipboard:', copiedText); // DEBUG
-        if (copiedText.length > 4) {
-            selectedText = copiedText.trim();
-            console.log('Clipboard text captured:', selectedText); // DEBUG
-            // Show popup at cursor position or centered
-            const x = Math.max(20, window.innerWidth - 340);
-            const y = Math.max(100, window.scrollY + 100);
-            selPopup.style.left = x + 'px';
-            selPopup.style.top  = y + 'px';
-            selPopup.classList.add('visible');
+    // Also wire doc-paper (non-PDF)
+    document.getElementById('docPaper')?.addEventListener('mouseup', handleTextSelection);
+
+    // Global mouseup listener to detect selections anywhere
+    document.addEventListener('mouseup', () => {
+        const sel = window.getSelection();
+        const selectedText_temp = (sel?.toString() || '').trim();
+        console.log('Global mouseup - selected text:', selectedText_temp); // DEBUG
+        if (selectedText_temp.length > 4) {
+            selectedText = selectedText_temp;
+            console.log('Text captured:', selectedText); // DEBUG
+            try {
+                const r = sel.getRangeAt(0).getBoundingClientRect();
+                const x = Math.min(r.left, window.innerWidth - 340);
+                const y = r.bottom + window.scrollY + 8;
+                selPopup.style.left = x + 'px';
+                selPopup.style.top = y + 'px';
+                selPopup.classList.add('visible');
+            } catch (e) {
+                console.log('Error showing popup:', e); // DEBUG
+            }
         }
-    } catch(err) {
-        console.log('Clipboard error:', err); // DEBUG
-    }
-});
-
-document.addEventListener('mousedown', (e) => {
-    if (!selPopup.contains(e.target)) selPopup.classList.remove('visible');
-});
-
-/* ── Tabs ─────────────────────────────────────────────────── */
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(btn.dataset.tab + '-pane').classList.add('active');
     });
-});
-function switchTab(name) {
-    document.querySelector(`.tab-btn[data-tab="${name}"]`)?.click();
-}
 
-/* ── Initial Parsing ──────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.ai-md').forEach(el => {
-        el.innerHTML = marked.parse(el.textContent);
+    // Clipboard listener to detect text copied from PDF viewer
+    document.addEventListener('copy', (e) => {
+        try {
+            const copiedText = e.clipboardData?.getData('text/plain') || '';
+            console.log('Text copied from clipboard:', copiedText); // DEBUG
+            if (copiedText.length > 4) {
+                selectedText = copiedText.trim();
+                console.log('Clipboard text captured:', selectedText); // DEBUG
+                // Show popup at cursor position or centered
+                const x = Math.max(20, window.innerWidth - 340);
+                const y = Math.max(100, window.scrollY + 100);
+                selPopup.style.left = x + 'px';
+                selPopup.style.top = y + 'px';
+                selPopup.classList.add('visible');
+            }
+        } catch (err) {
+            console.log('Clipboard error:', err); // DEBUG
+        }
     });
-});
 
-/* ── Toast ────────────────────────────────────────────────── */
-function showToast(msg, type = 'success') {
-    const area = document.getElementById('toastArea');
-    const el   = document.createElement('div');
-    el.className = `toast ${type}`;
-    el.innerHTML = `<i class="fas fa-${type==='success'?'circle-check':'circle-exclamation'}"></i> ${msg}`;
-    area.appendChild(el);
-    setTimeout(() => {
-        el.style.transition = '.3s'; el.style.opacity='0'; el.style.transform='translateY(14px)';
-        setTimeout(() => el.remove(), 310);
-    }, 3000);
-}
+    document.addEventListener('mousedown', (e) => {
+        if (!selPopup.contains(e.target)) selPopup.classList.remove('visible');
+    });
 
-/* ── Chat ─────────────────────────────────────────────────── */
-document.getElementById('chatForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('chatInput');
-    const msg   = input.value.trim();
-    if (!msg) return;
-    input.value = '';
-    appendMsg('user', msg);
-    const typing = appendTyping();
-    switchTab('chat');
-
-    try {
-        const fd = new FormData();
-        fd.append('message', msg);
-        fd.append('csrfmiddlewaretoken', CSRF);
-        const data = await fetch(URLS.chat, { method:'POST', body:fd }).then(r => r.json());
-        removeTyping(typing);
-        appendAIMsg(data.bot_response, data.page_reference);
-    } catch {
-        removeTyping(typing);
-        showToast('Network error', 'error');
+    /* ── Tabs ─────────────────────────────────────────────────── */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab + '-pane').classList.add('active');
+        });
+    });
+    function switchTab(name) {
+        document.querySelector(`.tab-btn[data-tab="${name}"]`)?.click();
     }
-});
 
-function appendMsg(role, text) {
-    const feed = document.getElementById('chatFeed');
-    const row  = document.createElement('div');
-    row.className = `msg-row ${role}`;
-    const icon = role === 'user' ? 'fa-user' : 'fa-brain';
-    row.innerHTML = `<div class="msg-avatar ${role}"><i class="fas ${icon}"></i></div>
+    /* ── Initial Parsing ──────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.ai-md').forEach(el => {
+            el.innerHTML = marked.parse(el.textContent);
+        });
+    });
+
+    /* ── Toast ────────────────────────────────────────────────── */
+    function showToast(msg, type = 'success') {
+        const area = document.getElementById('toastArea');
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.innerHTML = `<i class="fas fa-${type === 'success' ? 'circle-check' : 'circle-exclamation'}"></i> ${msg}`;
+        area.appendChild(el);
+        setTimeout(() => {
+            el.style.transition = '.3s'; el.style.opacity = '0'; el.style.transform = 'translateY(14px)';
+            setTimeout(() => el.remove(), 310);
+        }, 3000);
+    }
+
+    /* ── Chat ─────────────────────────────────────────────────── */
+    document.getElementById('chatForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const input = document.getElementById('chatInput');
+        const msg = input.value.trim();
+        if (!msg) return;
+        input.value = '';
+        appendMsg('user', msg);
+        const typing = appendTyping();
+        switchTab('chat');
+
+        try {
+            const fd = new FormData();
+            fd.append('message', msg);
+            fd.append('csrfmiddlewaretoken', CSRF);
+            const data = await fetch(URLS.chat, { method: 'POST', body: fd }).then(r => r.json());
+            removeTyping(typing);
+            appendAIMsg(data.bot_response, data.page_reference);
+        } catch {
+            removeTyping(typing);
+            showToast('Network error', 'error');
+        }
+    });
+
+    function appendMsg(role, text) {
+        const feed = document.getElementById('chatFeed');
+        const row = document.createElement('div');
+        row.className = `msg-row ${role}`;
+        const icon = role === 'user' ? 'fa-user' : 'fa-brain';
+        row.innerHTML = `<div class="msg-avatar ${role}"><i class="fas ${icon}"></i></div>
                      <div class="msg-bubble">${escHtml(text)}</div>`;
-    feed.appendChild(row);
-    feed.scrollTop = feed.scrollHeight;
-}
-function scrollMessageStartIntoView(row) {
-    const feed = document.getElementById('chatFeed');
-    if (!feed || !row) return;
-    const feedTop = feed.getBoundingClientRect().top;
-    const rowTop = row.getBoundingClientRect().top;
-    feed.scrollTop = Math.max(0, feed.scrollTop + rowTop - feedTop - 12);
-}
-function appendAIMsg(text, pageRef) {
-    const feed = document.getElementById('chatFeed');
-    const row  = document.createElement('div');
-    row.className = 'msg-row ai';
-    const cite = pageRef
-        ? `<div><span class="cite-chip"><i class="fas fa-bookmark"></i> Page ${pageRef}</span></div>`
-        : '';
-    row.innerHTML = `<div class="msg-avatar ai"><i class="fas fa-brain"></i></div>
+        feed.appendChild(row);
+        feed.scrollTop = feed.scrollHeight;
+    }
+    function scrollMessageStartIntoView(row) {
+        const feed = document.getElementById('chatFeed');
+        if (!feed || !row) return;
+        const feedTop = feed.getBoundingClientRect().top;
+        const rowTop = row.getBoundingClientRect().top;
+        feed.scrollTop = Math.max(0, feed.scrollTop + rowTop - feedTop - 12);
+    }
+    function appendAIMsg(text, pageRef) {
+        const feed = document.getElementById('chatFeed');
+        const row = document.createElement('div');
+        row.className = 'msg-row ai';
+        const cite = pageRef
+            ? `<div><span class="cite-chip"><i class="fas fa-bookmark"></i> Page ${pageRef}</span></div>`
+            : '';
+        row.innerHTML = `<div class="msg-avatar ai"><i class="fas fa-brain"></i></div>
                      <div class="msg-bubble"><div class="ai-md"></div>${cite}</div>`;
-    row.querySelector('.ai-md').innerHTML = marked.parse(text);
-    feed.appendChild(row);
-    scrollMessageStartIntoView(row);
-}
-function appendTyping() {
-    const feed = document.getElementById('chatFeed');
-    const row  = document.createElement('div');
-    row.className = 'msg-row ai';
-    row.innerHTML = `<div class="msg-avatar ai"><i class="fas fa-brain"></i></div>
+        row.querySelector('.ai-md').innerHTML = marked.parse(text);
+        feed.appendChild(row);
+        scrollMessageStartIntoView(row);
+    }
+    function appendTyping() {
+        const feed = document.getElementById('chatFeed');
+        const row = document.createElement('div');
+        row.className = 'msg-row ai';
+        row.innerHTML = `<div class="msg-avatar ai"><i class="fas fa-brain"></i></div>
         <div class="msg-bubble" style="display:flex;gap:5px;align-items:center;padding:14px 16px">
             <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
         </div>`;
-    feed.appendChild(row);
-    feed.scrollTop = feed.scrollHeight;
-    return row;
-}
-function removeTyping(el) { el?.remove(); }
-function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
-
-/* ── Explain ──────────────────────────────────────────────── */
-async function triggerExplain() {
-    console.log('triggerExplain called, selectedText:', selectedText); // DEBUG
-    selPopup.classList.remove('visible');
-    if (!selectedText) { 
-        console.log('No selectedText available'); // DEBUG
-        showToast('Select some text first','error'); 
-        return; 
+        feed.appendChild(row);
+        feed.scrollTop = feed.scrollHeight;
+        return row;
     }
-    switchTab('chat');
-    const typing = appendTyping();
-    const fd = new FormData();
-    fd.append('text', selectedText); 
-    fd.append('csrfmiddlewaretoken', CSRF);
-    console.log('Sending explain request with text:', selectedText); // DEBUG
-    try {
-        const response = await fetch(URLS.explain, { method:'POST', body:fd });
-        console.log('Response status:', response.status); // DEBUG
-        const data = await response.json();
-        console.log('Response data:', data); // DEBUG
-        removeTyping(typing);
-        appendMsg('user', `Explain: "${selectedText.substring(0,50)}…"`);
-        appendAIMsg(data.explanation);
-    } catch(err) { 
-        console.log('Error in triggerExplain:', err); // DEBUG
-        removeTyping(typing); 
-        showToast('Error','error'); 
-    }
-}
+    function removeTyping(el) { el?.remove(); }
+    function escHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'); }
 
-/* ── Generate ─────────────────────────────────────────────── */
-async function generateContent(type, text, count) {
-    console.log('generateContent called - type:', type, 'text:', text, 'count:', count); // DEBUG
-    selPopup.classList.remove('visible');
-    const urlMap = { flashcards:URLS.flashcards, mcqs:URLS.mcqs, questions:URLS.questions };
-    const tabMap = { flashcards:'flashcards', mcqs:'mcqs', questions:'questions' };
-    switchTab(tabMap[type]);
-
-    const fd = new FormData();
-    if (text) fd.append('text', text);
-    fd.append('count', count);
-    fd.append('csrfmiddlewaretoken', CSRF);
-
-    const targetId  = type==='flashcards' ? 'fcGrid' : type==='mcqs' ? 'mcqList' : 'sqList';
-    const container = document.getElementById(targetId);
-    const skel = document.createElement('div');
-    skel.innerHTML = '<div class="skeleton-bar"></div><div class="skeleton-bar" style="width:70%"></div><div class="skeleton-bar" style="width:85%"></div>';
-    container.prepend(skel);
-
-    try {
-        console.log('Sending request to:', urlMap[type]); // DEBUG
-        const response = await fetch(urlMap[type], { method:'POST', body:fd });
-        console.log('Response status:', response.status); // DEBUG
-        const data = await response.json();
-        console.log('Response data:', data); // DEBUG
-        skel.remove();
-        if (type==='flashcards') {
-            data.flashcards.forEach(fc => addFlashcard(fc.front, fc.back));
-            showToast(`${data.count} flashcards generated`);
-        } else if (type==='mcqs') {
-            const offset = document.querySelectorAll('.mcq-card').length;
-            data.mcqs.forEach((m,i) => addMCQ(m, offset+i+1));
-            showToast(`${data.count} MCQs generated`);
-        } else {
-            data.questions.forEach(q => addSQ(q.question, q.answer));
-            showToast(`${data.count} questions generated`);
+    /* ── Explain ──────────────────────────────────────────────── */
+    async function triggerExplain() {
+        console.log('triggerExplain called, selectedText:', selectedText); // DEBUG
+        selPopup.classList.remove('visible');
+        if (!selectedText) {
+            console.log('No selectedText available'); // DEBUG
+            showToast('Select some text first', 'error');
+            return;
         }
-    } catch(err) { 
-        console.log('Error in generateContent:', err); // DEBUG
-        skel.remove(); 
-        showToast('Generation failed','error'); 
+        switchTab('chat');
+        const typing = appendTyping();
+        const fd = new FormData();
+        fd.append('text', selectedText);
+        fd.append('csrfmiddlewaretoken', CSRF);
+        console.log('Sending explain request with text:', selectedText); // DEBUG
+        try {
+            const response = await fetch(URLS.explain, { method: 'POST', body: fd });
+            console.log('Response status:', response.status); // DEBUG
+            const data = await response.json();
+            console.log('Response data:', data); // DEBUG
+            removeTyping(typing);
+            appendMsg('user', `Explain: "${selectedText.substring(0, 50)}…"`);
+            appendAIMsg(data.explanation);
+        } catch (err) {
+            console.log('Error in triggerExplain:', err); // DEBUG
+            removeTyping(typing);
+            showToast('Error', 'error');
+        }
     }
-}
-function generateFromSelection(type, count) {
-    console.log('generateFromSelection called - type:', type, 'selectedText:', selectedText); // DEBUG
-    if (!selectedText) { 
-        console.log('No selectedText available'); // DEBUG
-        showToast('Select some text first','error'); 
-        return; 
-    }
-    generateContent(type, selectedText, count);
-}
-function triggerFlashcard() { 
-    console.log('triggerFlashcard called'); // DEBUG
-    generateFromSelection('flashcards',3); 
-}
-function triggerMCQ() {
-    console.log('triggerMCQ called'); // DEBUG
-    generateFromSelection('mcqs',2); 
-}
-function triggerQuestion() {
-    console.log('triggerQuestion called'); // DEBUG
-    generateFromSelection('questions',3); 
-}
 
-/* ── Flashcard ────────────────────────────────────────────── */
-function flipCard(el) { el.classList.toggle('flipped'); }
-function addFlashcard(front, back) {
-    const grid = document.getElementById('fcGrid');
-    const el = document.createElement('div');
-    el.className = 'fc-wrap'; el.onclick = function(){ flipCard(this); };
-    el.innerHTML = `<div class="fc-inner">
+    /* ── Generate ─────────────────────────────────────────────── */
+    async function generateContent(type, text, count) {
+        console.log('generateContent called - type:', type, 'text:', text, 'count:', count); // DEBUG
+        selPopup.classList.remove('visible');
+        const urlMap = { flashcards: URLS.flashcards, mcqs: URLS.mcqs, questions: URLS.questions };
+        const tabMap = { flashcards: 'flashcards', mcqs: 'mcqs', questions: 'questions' };
+        switchTab(tabMap[type]);
+
+        const fd = new FormData();
+        if (text) fd.append('text', text);
+        fd.append('count', count);
+        fd.append('csrfmiddlewaretoken', CSRF);
+
+        const targetId = type === 'flashcards' ? 'fcGrid' : type === 'mcqs' ? 'mcqList' : 'sqList';
+        const container = document.getElementById(targetId);
+        const skel = document.createElement('div');
+        skel.innerHTML = '<div class="skeleton-bar"></div><div class="skeleton-bar" style="width:70%"></div><div class="skeleton-bar" style="width:85%"></div>';
+        container.prepend(skel);
+
+        try {
+            console.log('Sending request to:', urlMap[type]); // DEBUG
+            const response = await fetch(urlMap[type], { method: 'POST', body: fd });
+            console.log('Response status:', response.status); // DEBUG
+            const data = await response.json();
+            console.log('Response data:', data); // DEBUG
+            skel.remove();
+            if (type === 'flashcards') {
+                data.flashcards.forEach(fc => addFlashcard(fc.front, fc.back));
+                showToast(`${data.count} flashcards generated`);
+            } else if (type === 'mcqs') {
+                const offset = document.querySelectorAll('.mcq-card').length;
+                data.mcqs.forEach((m, i) => addMCQ(m, offset + i + 1));
+                showToast(`${data.count} MCQs generated`);
+            } else {
+                data.questions.forEach(q => addSQ(q.question, q.answer));
+                showToast(`${data.count} questions generated`);
+            }
+        } catch (err) {
+            console.log('Error in generateContent:', err); // DEBUG
+            skel.remove();
+            showToast('Generation failed', 'error');
+        }
+    }
+    function generateFromSelection(type, count) {
+        console.log('generateFromSelection called - type:', type, 'selectedText:', selectedText); // DEBUG
+        if (!selectedText) {
+            console.log('No selectedText available'); // DEBUG
+            showToast('Select some text first', 'error');
+            return;
+        }
+        generateContent(type, selectedText, count);
+    }
+    function triggerFlashcard() {
+        console.log('triggerFlashcard called'); // DEBUG
+        generateFromSelection('flashcards', 3);
+    }
+    function triggerMCQ() {
+        console.log('triggerMCQ called'); // DEBUG
+        generateFromSelection('mcqs', 2);
+    }
+    function triggerQuestion() {
+        console.log('triggerQuestion called'); // DEBUG
+        generateFromSelection('questions', 3);
+    }
+
+    /* ── Flashcard ────────────────────────────────────────────── */
+    function flipCard(el) { el.classList.toggle('flipped'); }
+    function addFlashcard(front, back) {
+        const grid = document.getElementById('fcGrid');
+        const el = document.createElement('div');
+        el.className = 'fc-wrap'; el.onclick = function () { flipCard(this); };
+        el.innerHTML = `<div class="fc-inner">
         <div class="fc-face fc-front">${escHtml(front)}</div>
         <div class="fc-face fc-back">${escHtml(back)}</div>
     </div>`;
-    grid.appendChild(el);
-}
-
-/* ── MCQ ──────────────────────────────────────────────────── */
-function checkAnswer(el, selected, correct) {
-    el.parentElement.querySelectorAll('.mcq-opt').forEach(o => {
-        o.classList.add('answered'); o.style.pointerEvents='none';
-    });
-    el.classList.add(selected===correct ? 'correct' : 'wrong');
-    if (selected !== correct) {
-        el.parentElement.querySelectorAll('.mcq-opt').forEach(o => {
-            if (o.querySelector('.mcq-opt-letter')?.textContent.trim()===correct) o.classList.add('correct');
-        });
+        grid.appendChild(el);
     }
-    const exp = el.parentElement.querySelector('.mcq-explain');
-    if (exp) exp.style.display='block';
-}
-function addMCQ(mcq, num) {
-    const list = document.getElementById('mcqList');
-    const el   = document.createElement('div');
-    el.className = 'mcq-card';
-    const exp = mcq.explanation ? `<div class="mcq-explain"><i class="fas fa-lightbulb"></i> ${escHtml(mcq.explanation)}</div>` : '';
-    const optA = mcq.options?.a || mcq.option_a || '';
-    const optB = mcq.options?.b || mcq.option_b || '';
-    const optC = mcq.options?.c || mcq.option_c || '';
-    const optD = mcq.options?.d || mcq.option_d || '';
-    const cor  = mcq.correct || mcq.correct_answer || 'A';
-    el.innerHTML = `
+
+    /* ── MCQ ──────────────────────────────────────────────────── */
+    function checkAnswer(el, selected, correct) {
+        el.parentElement.querySelectorAll('.mcq-opt').forEach(o => {
+            o.classList.add('answered'); o.style.pointerEvents = 'none';
+        });
+        el.classList.add(selected === correct ? 'correct' : 'wrong');
+        if (selected !== correct) {
+            el.parentElement.querySelectorAll('.mcq-opt').forEach(o => {
+                if (o.querySelector('.mcq-opt-letter')?.textContent.trim() === correct) o.classList.add('correct');
+            });
+        }
+        const exp = el.parentElement.querySelector('.mcq-explain');
+        if (exp) exp.style.display = 'block';
+    }
+    function addMCQ(mcq, num) {
+        const list = document.getElementById('mcqList');
+        const el = document.createElement('div');
+        el.className = 'mcq-card';
+        const exp = mcq.explanation ? `<div class="mcq-explain"><i class="fas fa-lightbulb"></i> ${escHtml(mcq.explanation)}</div>` : '';
+        const optA = mcq.options?.a || mcq.option_a || '';
+        const optB = mcq.options?.b || mcq.option_b || '';
+        const optC = mcq.options?.c || mcq.option_c || '';
+        const optD = mcq.options?.d || mcq.option_d || '';
+        const cor = mcq.correct || mcq.correct_answer || 'A';
+        el.innerHTML = `
         <div class="mcq-q"><span>Q${num}</span>${escHtml(mcq.question)}</div>
         <div class="mcq-opt" onclick="checkAnswer(this,'A','${cor}')"><span class="mcq-opt-letter">A</span>${escHtml(optA)}</div>
         <div class="mcq-opt" onclick="checkAnswer(this,'B','${cor}')"><span class="mcq-opt-letter">B</span>${escHtml(optB)}</div>
         <div class="mcq-opt" onclick="checkAnswer(this,'C','${cor}')"><span class="mcq-opt-letter">C</span>${escHtml(optC)}</div>
         <div class="mcq-opt" onclick="checkAnswer(this,'D','${cor}')"><span class="mcq-opt-letter">D</span>${escHtml(optD)}</div>
         ${exp}`;
-    list.appendChild(el);
-}
+        list.appendChild(el);
+    }
 
-/* ── SQ ───────────────────────────────────────────────────── */
-function addSQ(q, a) {
-    const list = document.getElementById('sqList');
-    const el = document.createElement('div'); el.className='sq-card';
-    el.innerHTML = `<div class="sq-q"><i class="fas fa-circle-question sq-q-icon"></i>${escHtml(q)}</div>
+    /* ── SQ ───────────────────────────────────────────────────── */
+    function addSQ(q, a) {
+        const list = document.getElementById('sqList');
+        const el = document.createElement('div'); el.className = 'sq-card';
+        el.innerHTML = `<div class="sq-q"><i class="fas fa-circle-question sq-q-icon"></i>${escHtml(q)}</div>
                     <div class="sq-a">${escHtml(a)}</div>`;
-    list.appendChild(el);
-}
-
-/* ── Resize handle ────────────────────────────────────────── */
-const handle  = document.getElementById('resizeHandle');
-const leftPnl = document.getElementById('panelLeft');
-let drag=false, sx=0, sw=0;
-handle.addEventListener('mousedown', e => {
-    drag=true; sx=e.clientX; sw=leftPnl.offsetWidth;
-    handle.classList.add('dragging');
-    document.body.style.cursor='col-resize';
-    document.body.style.userSelect='none';
-});
-document.addEventListener('mousemove', e => {
-    if (!drag) return;
-    leftPnl.style.width = Math.max(280,Math.min(600,sw+(e.clientX-sx)))+'px';
-});
-document.addEventListener('mouseup', () => {
-    drag=false; handle.classList.remove('dragging');
-    document.body.style.cursor=''; document.body.style.userSelect='';
-});
-
-/* ── Initial scroll ───────────────────────────────────────── */
-const feed = document.getElementById('chatFeed');
-if (feed) feed.scrollTop = feed.scrollHeight;
-
-// PDF.js Render Logic
-{% if document.file_type == 'pdf' %}
-document.addEventListener('DOMContentLoaded', function() {
-    const pdfUrl = "{% url 'documents:serve_document' document.id %}";
-    const pdfContainer = document.getElementById('pdfContainer');
-
-    if (pdfContainer) {
-        const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
-        loadingTask.promise.then(async function(pdf) {
-            document.getElementById('pdfLoading').style.display = 'none';
-
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                const page = await pdf.getPage(pageNum);
-                
-                let scale = 1.3;
-                let viewport = page.getViewport({ scale: scale });
-
-                const pageDiv = document.createElement('div');
-                pageDiv.className = 'pdf-page-wrapper';
-                pageDiv.style.position = 'relative';
-                pageDiv.style.margin = '20px auto';
-                pageDiv.style.width = viewport.width + 'px';
-                pageDiv.style.height = viewport.height + 'px';
-                pageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
-                pageDiv.style.backgroundColor = 'white';
-
-                const canvas = document.createElement('canvas');
-                canvas.style.display = 'block';
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                pageDiv.appendChild(canvas);
-
-                const textLayerDiv = document.createElement('div');
-                textLayerDiv.className = 'textLayer';
-                textLayerDiv.style.position = 'absolute';
-                textLayerDiv.style.left = '0';
-                textLayerDiv.style.top = '0';
-                textLayerDiv.style.right = '0';
-                textLayerDiv.style.bottom = '0';
-                textLayerDiv.style.overflow = 'hidden';
-                textLayerDiv.style.lineHeight = '1.0';
-                pageDiv.appendChild(textLayerDiv);
-
-                pdfContainer.appendChild(pageDiv);
-
-                const renderContext = { canvasContext: context, viewport: viewport };
-                await page.render(renderContext).promise;
-
-                const textContent = await page.getTextContent();
-                pdfjsLib.renderTextLayer({
-                    textContent: textContent,
-                    container: textLayerDiv,
-                    viewport: viewport,
-                    textDivs: []
-                });
-
-                textLayerDiv.addEventListener('mouseup', handleTextSelection);
-            }
-        }).catch(function(err) {
-            console.error("Error rendering PDF:", err);
-            document.getElementById('pdfLoading').textContent = "Failed to load PDF.";
-        });
+        list.appendChild(el);
     }
-});
-{% endif %}
 
-// DOCX client-side rendering via docx-preview
-{% if document.file_type == 'docx' or document.file_type == 'doc' %}
-document.addEventListener('DOMContentLoaded', function() {
-    const docxUrl = "{% url 'documents:serve_document' document.id %}";
-    const container = document.getElementById('docxContainer');
-    const loading = document.getElementById('docxLoading');
+    /* ── Resize handle ────────────────────────────────────────── */
+    const handle = document.getElementById('resizeHandle');
+    const leftPnl = document.getElementById('panelLeft');
+    let drag = false, sx = 0, sw = 0;
+    handle.addEventListener('mousedown', e => {
+        drag = true; sx = e.clientX; sw = leftPnl.offsetWidth;
+        handle.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', e => {
+        if (!drag) return;
+        leftPnl.style.width = Math.max(280, Math.min(600, sw + (e.clientX - sx))) + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+        drag = false; handle.classList.remove('dragging');
+        document.body.style.cursor = ''; document.body.style.userSelect = '';
+    });
 
-    if (container && window.docx) {
-        fetch(docxUrl)
-            .then(r => r.arrayBuffer())
-            .then(buf => {
-                window.docx.renderAsync(buf, container, null, {
-                    className: "docx-wrapper",
-                    inWrapper: true,
-                    ignoreWidth: false,
-                    ignoreHeight: false,
-                    ignoreFonts: false,
-                    breakPages: true,
-                    ignoreLastRenderedPageBreak: true,
-                    experimental: true,
-                    trimXmlDeclaration: true,
-                    useBase64URL: true,
-                    renderHeaders: true,
-                    renderFooters: true,
-                    renderFootnotes: true,
-                    renderEndnotes: true,
-                }).then(() => {
-                    if (loading) loading.style.display = 'none';
-                    // Wire up text selection for AI features
-                    container.addEventListener('mouseup', handleTextSelection);
-                });
-            })
-            .catch(err => {
-                console.error("Error rendering DOCX:", err);
-                if (loading) loading.textContent = "Failed to render document.";
+    /* ── Initial scroll ───────────────────────────────────────── */
+    const feed = document.getElementById('chatFeed');
+    if (feed) feed.scrollTop = feed.scrollHeight;
+
+    // PDF.js Render Logic
+    {% if document.file_type == 'pdf' %}
+    document.addEventListener('DOMContentLoaded', function () {
+        const pdfUrl = "{% url 'documents:serve_document' document.id %}";
+        const pdfContainer = document.getElementById('pdfContainer');
+
+        if (pdfContainer) {
+            const pdfjsLib = window['pdfjs-dist/build/pdf'];
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+            const loadingTask = pdfjsLib.getDocument(pdfUrl);
+            loadingTask.promise.then(async function (pdf) {
+                document.getElementById('pdfLoading').style.display = 'none';
+
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+
+                    let scale = 1.3;
+                    let viewport = page.getViewport({ scale: scale });
+
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'pdf-page-wrapper';
+                    pageDiv.style.position = 'relative';
+                    pageDiv.style.margin = '20px auto';
+                    pageDiv.style.width = viewport.width + 'px';
+                    pageDiv.style.height = viewport.height + 'px';
+                    pageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+                    pageDiv.style.backgroundColor = 'white';
+
+                    const canvas = document.createElement('canvas');
+                    canvas.style.display = 'block';
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    pageDiv.appendChild(canvas);
+
+                    const textLayerDiv = document.createElement('div');
+                    textLayerDiv.className = 'textLayer';
+                    textLayerDiv.style.position = 'absolute';
+                    textLayerDiv.style.left = '0';
+                    textLayerDiv.style.top = '0';
+                    textLayerDiv.style.right = '0';
+                    textLayerDiv.style.bottom = '0';
+                    textLayerDiv.style.overflow = 'hidden';
+                    textLayerDiv.style.lineHeight = '1.0';
+                    pageDiv.appendChild(textLayerDiv);
+
+                    pdfContainer.appendChild(pageDiv);
+
+                    const renderContext = { canvasContext: context, viewport: viewport };
+                    await page.render(renderContext).promise;
+
+                    const textContent = await page.getTextContent();
+                    pdfjsLib.renderTextLayer({
+                        textContent: textContent,
+                        container: textLayerDiv,
+                        viewport: viewport,
+                        textDivs: []
+                    });
+
+                    textLayerDiv.addEventListener('mouseup', handleTextSelection);
+                }
+            }).catch(function (err) {
+                console.error("Error rendering PDF:", err);
+                document.getElementById('pdfLoading').textContent = "Failed to load PDF.";
             });
-    } else if (loading) {
-        loading.textContent = "DOCX viewer not available.";
-    }
-});
-{% endif %}
+        }
+    });
+    {% endif %}
 
-// Wire up text selection for PPTX/XLSX iframe
-{% if document.file_type == 'pptx' or document.file_type == 'xlsx' %}
-document.addEventListener('DOMContentLoaded', function() {
-    const iframe = document.getElementById('officeFrame');
-    if (iframe) {
-        iframe.addEventListener('load', function() {
-            try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                iframeDoc.addEventListener('mouseup', function() {
-                    const sel = iframeDoc.getSelection();
-                    const text = (sel?.toString() || '').trim();
-                    if (text.length > 4) {
-                        selectedText = text;
-                        // Show popup near the top-right of the iframe
-                        const iframeRect = iframe.getBoundingClientRect();
-                        selPopup.style.left = (iframeRect.right - 340) + 'px';
-                        selPopup.style.top = (iframeRect.top + 60) + 'px';
-                        selPopup.classList.add('visible');
-                    }
-                });
-            } catch(e) {
-                console.log('Could not wire iframe selection:', e);
+    // DOCX client-side rendering via docx-preview
+    {% if document.file_type == 'docx' or document.file_type == 'doc' %}
+    document.addEventListener('DOMContentLoaded', function () {
+        const docxUrl = "{% url 'documents:serve_document' document.id %}";
+        const container = document.getElementById('docxContainer');
+        const loading = document.getElementById('docxLoading');
+
+        if (!container) return;
+
+        // Wait for docx-preview library to load
+        function tryRender(attempts) {
+            if (attempts <= 0) {
+                if (loading) loading.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-right:8px;"></i> DOCX renderer failed to load.';
+                return;
             }
-        });
-    }
-});
-{% endif %}
+            if (!window.docx) {
+                setTimeout(() => tryRender(attempts - 1), 300);
+                return;
+            }
+            fetch(docxUrl)
+                .then(r => {
+                    if (!r.ok) throw new Error('Failed to fetch document: ' + r.status);
+                    return r.arrayBuffer();
+                })
+                .then(buf => {
+                    return window.docx.renderAsync(buf, container, null, {
+                        className: "docx-wrapper",
+                        inWrapper: true,
+                        ignoreWidth: false,
+                        ignoreHeight: false,
+                        breakPages: true,
+                        renderHeaders: true,
+                        renderFooters: true,
+                    });
+                })
+                .then(() => {
+                    if (loading) loading.style.display = 'none';
+                    container.addEventListener('mouseup', handleTextSelection);
+                })
+                .catch(err => {
+                    console.error("DOCX render error:", err);
+                    if (loading) loading.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-right:8px;"></i> Failed to render document. <a href="' + docxUrl + '" style="color:#6366f1;">Download instead</a>';
+                });
+        }
+
+        tryRender(10); // retry up to 10 times (3 seconds)
+    });
+    {% endif %}
+
+    // Wire up text selection for PPTX/XLSX iframe
+    {% if document.file_type == 'pptx' or document.file_type == 'xlsx' %}
+    document.addEventListener('DOMContentLoaded', function () {
+        const iframe = document.getElementById('officeFrame');
+        if (iframe) {
+            iframe.addEventListener('load', function () {
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    iframeDoc.addEventListener('mouseup', function () {
+                        const sel = iframeDoc.getSelection();
+                        const text = (sel?.toString() || '').trim();
+                        if (text.length > 4) {
+                            selectedText = text;
+                            // Show popup near the top-right of the iframe
+                            const iframeRect = iframe.getBoundingClientRect();
+                            selPopup.style.left = (iframeRect.right - 340) + 'px';
+                            selPopup.style.top = (iframeRect.top + 60) + 'px';
+                            selPopup.classList.add('visible');
+                        }
+                    });
+                } catch (e) {
+                    console.log('Could not wire iframe selection:', e);
+                }
+            });
+        }
+    });
+    {% endif %}
 </script>
 {% endblock %}

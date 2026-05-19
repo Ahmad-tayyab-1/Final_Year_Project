@@ -25,10 +25,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-#SECRET_KEY = 'django-insecure-y1k)f%pkd+p3^h7_$mh*fxcg6dv*%#t3=w$v#s7xyd4ke(43!)'
-SECRET_KEY = os.environ.get('SECRET_KEY', 'ndKqr55dd8VQfYy6CqmChTBWGADkV65Q_f%pkd+p3^h7_$mh*fxcg6dv*%#t3=w$v#s7xyd4ke')
+# SECRET_KEY = 'django-insecure-y1k)f%pkd+p3^h7_$mh*fxcg6dv*%#t3=w$v#s7xyd4ke(43!)'
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY', 'ndKqr55dd8VQfYy6CqmChTBWGADkV65Q_f%pkd+p3^h7_$mh*fxcg6dv*%#t3=w$v#s7xyd4ke')
 # SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = True
+# DEBUG = True
 DEBUG = 'RENDER' not in os.environ
 ALLOWED_HOSTS = []
 
@@ -132,7 +133,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-#STATIC_URL = 'static/'
+# STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
@@ -141,11 +142,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # GROQ API KEY will now be loaded from .env file
 # os.environ['GROQ_API_KEY'] is no longer hardcoded
@@ -155,9 +154,9 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760
 
 # Authentication Settings
-LOGIN_REDIRECT_URL = 'documents:home'
-LOGOUT_REDIRECT_URL = 'login'
-LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = '/fyp/'
+LOGOUT_REDIRECT_URL = '/fyp/login'
+LOGIN_URL = '/fyp/login'
 
 # Custom Authentication Backends
 AUTHENTICATION_BACKENDS = [
