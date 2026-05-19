@@ -713,7 +713,7 @@
             <div class="card-thumb">
                 <img src="" alt="" onerror="this.style.display='none'">
                 <div class="card-thumb-icon">
-                    <i class="fas fa-{% if doc.file_type == 'pdf' %}file-pdf{% elif doc.file_type == 'docx' %}file-word{% elif doc.file_type == 'pptx' %}file-powerpoint{% else %}file-lines{% endif %}"></i>
+                    <i class="{% if doc.file_type == 'pdf' %}fas fa-file-pdf{% elif doc.file_type == 'docx' %}fas fa-file-word{% elif doc.file_type == 'pptx' %}fas fa-file-powerpoint{% elif doc.file_type == 'xlsx' %}fas fa-file-excel{% elif doc.file_type == 'youtube' %}fab fa-youtube{% elif doc.file_type == 'txt' %}fas fa-file-lines{% else %}fas fa-file-lines{% endif %}"></i>
                 </div>
                 <span class="card-type-badge">{{ doc.file_type|upper }}</span>
             </div>

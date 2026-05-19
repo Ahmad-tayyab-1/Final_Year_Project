@@ -1484,7 +1484,25 @@
     document.addEventListener('mousedown', (e) => {
         if (!selPopup.contains(e.target)) selPopup.classList.remove('visible');
     });
-
+    document.addEventListener('touchend', (e) => {
+        setTimeout(() => {
+            const sel = window.getSelection();
+            const text = (sel?.toString() || '').trim();
+            if (text.length > 4) {
+                selectedText = text;
+                try {
+                    const r = sel.getRangeAt(0).getBoundingClientRect();
+                    const x = Math.min(r.left, window.innerWidth - 340);
+                    const y = r.bottom + window.scrollY + 8;
+                    selPopup.style.left = x + 'px';
+                    selPopup.style.top = y + 'px';
+                    selPopup.classList.add('visible');
+                } catch (err) { }
+            } else {
+                if (!selPopup.contains(e.target)) selPopup.classList.remove('visible');
+            }
+        }, 300);
+    });
     /* ── Tabs ─────────────────────────────────────────────────── */
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
