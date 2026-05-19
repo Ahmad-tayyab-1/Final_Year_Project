@@ -2,6 +2,8 @@ import fitz
 import re
 import os
 import json
+import requests
+from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
 from pptx import Presentation
 from reportlab.lib.pagesizes import letter
@@ -10,10 +12,10 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.units import inch
 from groq import Groq
 from .youtube import extract_youtube_video_id
- 
- 
+
+
 class DocumentProcessor:
- 
+
     def extract_text_with_pages(self, file_path):
         doc = fitz.open(file_path)
         pages = []
@@ -24,11 +26,11 @@ class DocumentProcessor:
             full_text += f"\\n--- Page {page_num} ---\\n{text}"
         doc.close()
         return full_text, pages, len(pages)
- 
+
     def extract_text_from_docx(self, file_path):
         doc = DocxDocument(file_path)
         return "\\n".join([p.text for p in doc.paragraphs])
-    
+
     def extract_text_from_doc(self, file_path):
         """Extract text from older .doc files (Office 97-2003 format)."""
         try:
@@ -40,19 +42,20 @@ class DocumentProcessor:
             try:
                 import subprocess
                 import tempfile
-                
+
                 # Create a temporary directory for conversion
                 with tempfile.TemporaryDirectory() as tmp_dir:
                     output_path = os.path.join(tmp_dir, "converted.docx")
-                    
+
                     # Try using LibreOffice command line conversion
                     try:
                         subprocess.run([
                             'soffice', '--headless', '--convert-to', 'docx',
                             '--outdir', tmp_dir, file_path
                         ], check=True, capture_output=True, timeout=30)
-                        
-                        converted_file = os.path.join(tmp_dir, os.path.splitext(os.path.basename(file_path))[0] + ".docx")
+
+                        converted_file = os.path.join(tmp_dir, os.path.splitext(
+                            os.path.basename(file_path))[0] + ".docx")
                         if os.path.exists(converted_file):
                             doc = DocxDocument(converted_file)
                             return "\\n".join([p.text for p in doc.paragraphs])
@@ -60,25 +63,26 @@ class DocumentProcessor:
                         pass
             except Exception:
                 pass
-            
+
             # Fallback: Extract text from binary format
             try:
                 from docx.oxml import parse_xml
                 from zipfile import ZipFile
-                
+
                 # Try to read as if it's a zipped XML (some .doc files are actually docx)
                 try:
                     with ZipFile(file_path, 'r') as zip_ref:
                         xml_content = zip_ref.read('word/document.xml')
                         import re
                         # Remove XML tags
-                        text = re.sub(r'<[^>]+>', '', xml_content.decode('utf-8'))
+                        text = re.sub(r'<[^>]+>', '',
+                                      xml_content.decode('utf-8'))
                         return text.strip()
                 except:
                     pass
             except Exception:
                 pass
-            
+
             # Final fallback: Extract ASCII text from binary
             try:
                 with open(file_path, 'rb') as f:
@@ -92,58 +96,60 @@ class DocumentProcessor:
                         else:
                             if len(current) > 4:
                                 try:
-                                    text.append(current.decode('utf-8', errors='ignore'))
+                                    text.append(current.decode(
+                                        'utf-8', errors='ignore'))
                                 except:
                                     pass
                             current = b''
-                    
+
                     result = ' '.join(text)
                     return result if result.strip() else "Could not extract text from .doc file. File may be corrupted."
             except Exception as extract_err:
                 return f"Error processing .doc file: {str(extract_err)}"
- 
+
     def extract_text_from_pptx(self, file_path):
-        prs  = Presentation(file_path)
+        prs = Presentation(file_path)
         text = ""
         for slide in prs.slides:
             for shape in slide.shapes:
                 if hasattr(shape, "text"):
                     text += shape.text + "\\n"
         return text
-    
+
     def extract_text_from_xlsx(self, file_path):
         """Extract text from XLSX file."""
         try:
             import openpyxl
         except ImportError:
             return "openpyxl not installed for XLSX processing"
-        
+
         wb = openpyxl.load_workbook(file_path)
         text = ""
-        
+
         for sheet_name in wb.sheetnames:
             sheet = wb[sheet_name]
             text += f"Sheet: {sheet_name}\\n"
-            
+
             for row in sheet.iter_rows(values_only=True):
-                row_text = " ".join([str(cell) for cell in row if cell is not None])
+                row_text = " ".join([str(cell)
+                                    for cell in row if cell is not None])
                 if row_text.strip():
                     text += row_text + "\\n"
-        
+
         return text
 
     def extract_text_from_txt(self, file_path):
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
             return f.read()
- 
+
     def clean_text(self, text):
         return re.sub(r"\\s+", " ", text).strip()
- 
+
     def generate_office_html(self, doc):
         """Generate HTML representation of Office documents."""
         file_path = doc.file.path
         file_type = doc.file_type
-        
+
         if file_type in ('docx', 'doc'):
             return self._docx_to_html(file_path)
         elif file_type == 'pptx':
@@ -152,7 +158,7 @@ class DocumentProcessor:
             return self._xlsx_to_html(file_path)
         else:
             return f"<p>Unsupported file type: {file_type}</p>"
-    
+
     def convert_office_to_pdf(self, doc):
         """Convert Office document to PDF using LibreOffice and return PDF file path."""
         file_path = doc.file.path
@@ -185,7 +191,8 @@ class DocumentProcessor:
                 soffice = candidate
                 break
         if soffice is None:
-            raise RuntimeError("LibreOffice (soffice) not found. Please install LibreOffice.")
+            raise RuntimeError(
+                "LibreOffice (soffice) not found. Please install LibreOffice.")
 
         # LibreOffice writes the output PDF next to the source file inside --outdir.
         # We work in a temp directory to avoid polluting the media folder during conversion.
@@ -196,14 +203,16 @@ class DocumentProcessor:
 
             # Run the conversion
             result = subprocess.run(
-                [soffice, '--headless', '--convert-to', 'pdf', '--outdir', tmp_dir, tmp_src],
+                [soffice, '--headless', '--convert-to',
+                    'pdf', '--outdir', tmp_dir, tmp_src],
                 capture_output=True,
                 timeout=120,
             )
 
             if result.returncode != 0:
                 stderr = result.stderr.decode(errors='ignore')
-                raise RuntimeError(f"LibreOffice PDF conversion failed: {stderr}")
+                raise RuntimeError(
+                    f"LibreOffice PDF conversion failed: {stderr}")
 
             # LibreOffice names the output <original_stem>.pdf
             base_stem = os.path.splitext(os.path.basename(file_path))[0]
@@ -217,14 +226,14 @@ class DocumentProcessor:
 
             # Move the finished PDF to the target location
             shutil.move(tmp_pdf, pdf_path)
-    
+
     def _docx_to_html(self, file_path):
         """Convert DOCX to full-fidelity HTML using mammoth (preserves images, tables, formatting)."""
         import mammoth
         with open(file_path, "rb") as f:
             result = mammoth.convert_to_html(f)
         return result.value
-    
+
     def _pptx_to_html(self, file_path):
         """Convert PPTX to HTML slides with ALL images extracted."""
         import base64
@@ -266,14 +275,17 @@ class DocumentProcessor:
                 try:
                     fill = shape.fill
                     if fill and fill.type is not None:
-                        blip = fill._fill.findall('.//{http://schemas.openxmlformats.org/drawingml/2006/main}blip')
+                        blip = fill._fill.findall(
+                            './/{http://schemas.openxmlformats.org/drawingml/2006/main}blip')
                         for b in blip:
-                            rId = b.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+                            rId = b.get(
+                                '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
                             if rId:
                                 rel = shape.part.rels[rId]
                                 img_bytes = rel.target_part.blob
                                 content_type = rel.target_part.content_type
-                                b64_data = base64.b64encode(img_bytes).decode('utf-8')
+                                b64_data = base64.b64encode(
+                                    img_bytes).decode('utf-8')
                                 parts_list.append(
                                     f"<div style='text-align:center; margin:12px 0;'>"
                                     f"<img src='data:{content_type};base64,{b64_data}' "
@@ -307,14 +319,17 @@ class DocumentProcessor:
                 bg = slide.background
                 bg_fill = bg.fill
                 if bg_fill._fill is not None:
-                    blips = bg_fill._fill.findall('.//{http://schemas.openxmlformats.org/drawingml/2006/main}blip')
+                    blips = bg_fill._fill.findall(
+                        './/{http://schemas.openxmlformats.org/drawingml/2006/main}blip')
                     for b in blips:
-                        rId = b.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+                        rId = b.get(
+                            '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
                         if rId:
                             rel = slide.part.rels[rId]
                             img_bytes = rel.target_part.blob
                             content_type = rel.target_part.content_type
-                            b64_data = base64.b64encode(img_bytes).decode('utf-8')
+                            b64_data = base64.b64encode(
+                                img_bytes).decode('utf-8')
                             html_parts.append(
                                 f"<div style='text-align:center; margin:12px 0;'>"
                                 f"<img src='data:{content_type};base64,{b64_data}' "
@@ -332,35 +347,37 @@ class DocumentProcessor:
 
         html_parts.append("</div>")
         return "\n".join(html_parts)
-    
+
     def _xlsx_to_html(self, file_path):
         """Convert XLSX to HTML table."""
         try:
             import openpyxl
         except ImportError:
             return "<p>openpyxl not installed. Run: pip install openpyxl</p>"
-        
+
         wb = openpyxl.load_workbook(file_path)
         html_parts = []
-        
+
         for sheet_name in wb.sheetnames:
             sheet = wb[sheet_name]
             html_parts.append(f"<h2>{sheet_name}</h2>")
-            html_parts.append("<table border='1' style='border-collapse: collapse;'>")
-            
+            html_parts.append(
+                "<table border='1' style='border-collapse: collapse;'>")
+
             for row in sheet.iter_rows(values_only=True):
                 html_parts.append("<tr>")
                 for cell in row:
                     if cell is not None:
-                        html_parts.append(f"<td style='padding: 5px;'>{cell}</td>")
+                        html_parts.append(
+                            f"<td style='padding: 5px;'>{cell}</td>")
                     else:
                         html_parts.append("<td style='padding: 5px;'></td>")
                 html_parts.append("</tr>")
-            
+
             html_parts.append("</table>")
-        
+
         return "\n".join(html_parts)
-    
+
     # NOTE: _docx_to_pdf / _pptx_to_pdf / _xlsx_to_pdf are no longer used.
     # All office-to-PDF conversion now goes through _libreoffice_to_pdf above.
     # Kept as a commented-out fallback reference only.
@@ -370,31 +387,56 @@ class DocumentProcessor:
         query_words = set(re.findall(r"\\w+", query.lower()))
         if not query_words:
             return document_text[:max_chars]
- 
+
         chunks = re.split(r"--- Page \\d+ ---", document_text)
         chunks = [c.strip() for c in chunks if c.strip()]
         if not chunks:
             return document_text[:max_chars]
- 
+
         scored = sorted(
-            [(len(set(re.findall(r"\\w+", c.lower())) & query_words), c) for c in chunks],
+            [(len(set(re.findall(r"\\w+", c.lower())) & query_words), c)
+             for c in chunks],
             key=lambda x: x[0], reverse=True
         )
- 
+
         context = ""
         for _, chunk in scored:
             if len(context) + len(chunk) > max_chars:
                 break
             context += chunk + "\\n\\n"
         return context.strip() or document_text[:max_chars]
- 
- 
+
+
 class YouTubeProcessor:
     """Fetch and process YouTube video transcripts."""
- 
+
     def extract_video_id(self, url: str):
         return extract_youtube_video_id(url)
- 
+
+    def get_video_metadata(self, url_or_video_id: str):
+        """Return public YouTube metadata available without an API key."""
+        video_id = self.extract_video_id(url_or_video_id) or url_or_video_id
+        if not video_id:
+            return {}
+
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        try:
+            resp = requests.get(
+                "https://www.youtube.com/oembed",
+                params={"url": video_url, "format": "json"},
+                timeout=8,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return {
+                "title": data.get("title", ""),
+                "author_name": data.get("author_name", ""),
+                "author_url": data.get("author_url", ""),
+                "video_url": video_url,
+            }
+        except Exception:
+            return {"video_url": video_url}
+
     def get_transcript(self, video_id: str):
         """
         Returns (transcript_text, video_title_or_None).
@@ -430,7 +472,8 @@ class YouTubeProcessor:
                     tl = YouTubeTranscriptApi.list_transcripts(video_id)
                 # Prefer English auto-generated, fall back to first available
                 try:
-                    transcript_list = tl.find_generated_transcript(["en"]).fetch()
+                    transcript_list = tl.find_generated_transcript(
+                        ["en"]).fetch()
                 except Exception:
                     transcript_list = next(iter(tl)).fetch()
             except Exception:
@@ -447,60 +490,158 @@ class YouTubeProcessor:
         for entry in transcript_list:
             if isinstance(entry, dict):
                 start = entry["start"]
-                text  = entry["text"]
+                text = entry["text"]
             else:
                 # v1.x object — attributes .start and .text
                 start = entry.start
-                text  = entry.text
+                text = entry.text
             mins = int(start // 60)
             secs = int(start % 60)
             lines.append(f"[{mins:02d}:{secs:02d}] {text}")
 
         transcript_text = "\n".join(lines)
-        return transcript_text, None   # title fetching requires a separate API key
- 
- 
+        metadata = self.get_video_metadata(video_id)
+        return transcript_text, metadata.get("title")
+
+
+class WebSearch:
+    """Small live-web search helper that returns snippets for the AI prompt."""
+
+    def search(self, query, max_results=5):
+        try:
+            response = requests.get(
+                "https://duckduckgo.com/html/",
+                params={"q": query},
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=10,
+            )
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+            results = []
+
+            for result in soup.select(".result"):
+                title_el = result.select_one(".result__a")
+                snippet_el = result.select_one(".result__snippet")
+                if not title_el:
+                    continue
+                title = title_el.get_text(" ", strip=True)
+                url = title_el.get("href", "")
+                snippet = snippet_el.get_text(" ", strip=True) if snippet_el else ""
+                if title and url:
+                    results.append({"title": title, "url": url, "snippet": snippet})
+                if len(results) >= max_results:
+                    break
+
+            return results
+        except Exception:
+            return []
+
+    def format_results(self, results):
+        if not results:
+            return ""
+        lines = []
+        for index, item in enumerate(results, 1):
+            lines.append(
+                f"[{index}] {item['title']}\nURL: {item['url']}\nSnippet: {item.get('snippet', '')}"
+            )
+        return "\n\n".join(lines)
+
+
 class AIAssistant:
- 
+
     def __init__(self):
         self._api_key = os.getenv("GROQ_API_KEY")
-        self._client  = None
- 
+        self._client = None
+
     @property
     def client(self):
         if self._client is None and self._api_key:
             self._client = Groq(api_key=self._api_key)
         return self._client
- 
+
+    def _casual_response(self, query):
+        """Return a friendly reply for greetings or tiny non-document messages."""
+        normalized = re.sub(r"[^a-z0-9\s]", " ", query.lower()).strip()
+        normalized = re.sub(r"\s+", " ", normalized)
+        if not normalized:
+            return None
+
+        greetings = {
+            "hi", "hii", "hello", "hey", "yo", "salam", "assalamualaikum",
+            "assalamu alaikum", "good morning", "good afternoon", "good evening",
+        }
+        check_ins = {
+            "how are you", "how r u", "how are u", "what s up", "whats up",
+            "wassup", "sup", "how you doing",
+        }
+        thanks = {"thanks", "thank you", "thx", "ty"}
+        vague = {"what", "hwat", "ok", "okay", "hmm", "huh"}
+
+        if normalized in greetings:
+            return (
+                "Hey! I'm here with you. How are you doing? "
+                "You can ask me anything about this document or video whenever you're ready."
+            )
+        if normalized in check_ins:
+            return (
+                "I'm doing well, thanks for asking. How are you? "
+                "If you want, we can go through this material together."
+            )
+        if normalized in thanks:
+            return "You're welcome. Ask me the next thing you want to understand from this material."
+        if normalized in vague:
+            return (
+                "I'm here. Ask me a specific question about the document or video, "
+                "or tell me what topic you want explained."
+            )
+        return None
+
     # ── Answer with smart context ────────────────────────────
-    def answer_question(self, query, document_text):
+    def answer_question(self, query, document_text, source_info="", web_results=""):
+        casual = self._casual_response(query)
+        if casual:
+            return casual, None
+
         if not self.client:
             return "Groq API key not configured.", None
         try:
-            proc    = DocumentProcessor()
+            proc = DocumentProcessor()
             context = proc.get_relevant_context(query, document_text, 4000)
-            resp    = self.client.chat.completions.create(
+            resp = self.client.chat.completions.create(
                 messages=[
                     {"role": "system",
                      "content": (
-                         "You are a helpful educational assistant. Answer based on the "
-                         "document/transcript context. Cite page numbers or timestamps "
-                         "when identifiable from markers like --- Page N --- or [MM:SS]."
+                         "You are DocuLearn AI, a natural chatbot and educational assistant. "
+                         "First understand what the user is asking, then choose the right mode:\n"
+                         "1. For greetings, small talk, thanks, or unclear tiny messages, reply like a normal friendly chatbot.\n"
+                         "2. For questions about the uploaded document/video, use the source info and transcript/document context.\n"
+                         "3. For questions whose answer is not in the uploaded material, use the live web results if provided. If no web results are provided, answer from your general knowledge when possible and say briefly that it is general knowledge.\n"
+                         "4. If you use live web results, say that you checked live web results and include the most relevant source URL(s).\n"
+                         "5. Answer the exact question first. Keep answers conversational and concise unless the user asks for a summary or detailed explanation.\n"
+                         "6. Do not dump a script-style outline or summarize the whole video/document unless asked.\n"
+                         "7. Cite page numbers or timestamps only when useful and identifiable from markers like --- Page N --- or [MM:SS]."
                      )},
                     {"role": "user",
-                     "content": f"Context:\\n{context}\\n\\nQuestion: {query}\\n\\nProvide a detailed and comprehensive answer using markdown formatting (bolding, lists, etc) with a citation if possible."},
+                     "content": (
+                         f"Source info:\n{source_info or 'No extra source metadata available.'}\n\n"
+                         f"Relevant document/video context:\n{context}\n\n"
+                         f"Live web results:\n{web_results or 'No live web results were provided for this question.'}\n\n"
+                         f"User question:\n{query}\n\n"
+                         "Reply naturally and directly. If source metadata answers the question, use it. "
+                         "If live web results are provided and useful, use them. If the context does not contain the answer but you know it generally, answer generally and make that clear."
+                     )},
                 ],
                 model="llama-3.3-70b-versatile",
                 temperature=0.6,
-                max_tokens=1500,
+                max_tokens=900,
             )
-            answer    = resp.choices[0].message.content
+            answer = resp.choices[0].message.content
             page_match = re.search(r"[Pp]age\\s+(\\d+)", answer)
-            page_ref   = int(page_match.group(1)) if page_match else None
+            page_ref = int(page_match.group(1)) if page_match else None
             return answer, page_ref
         except Exception as e:
             return f"Error: {e}", None
- 
+
     # ── Explain selected text ────────────────────────────────
     def explain_text(self, selected_text, document_context=""):
         if not self.client:
@@ -519,7 +660,7 @@ class AIAssistant:
             return resp.choices[0].message.content
         except Exception as e:
             return f"Error: {e}"
- 
+
     # ── Flashcards ────────────────────────────────────────────
     def generate_flashcards(self, text, count=5):
         if not self.client:
@@ -535,15 +676,16 @@ class AIAssistant:
                 model="llama-3.3-70b-versatile",
                 temperature=0.8, max_tokens=900,
             )
-            raw  = re.sub(r"```[a-z]*", "", resp.choices[0].message.content).strip().strip("`")
+            raw = re.sub(
+                r"```[a-z]*", "", resp.choices[0].message.content).strip().strip("`")
             data = json.loads(raw)
             if isinstance(data, list):
-                return [{"front": str(d.get("front","")), "back": str(d.get("back",""))}
+                return [{"front": str(d.get("front", "")), "back": str(d.get("back", ""))}
                         for d in data if d.get("front") and d.get("back")][:count]
         except Exception as e:
             print(f"Flashcard error: {e}")
         return []
- 
+
     # ── MCQs ──────────────────────────────────────────────────
     def generate_mcqs(self, text, count=3):
         if not self.client:
@@ -561,22 +703,23 @@ class AIAssistant:
                 model="llama-3.3-70b-versatile",
                 temperature=0.7, max_tokens=1200,
             )
-            raw  = re.sub(r"```[a-z]*", "", resp.choices[0].message.content).strip().strip("`")
+            raw = re.sub(
+                r"```[a-z]*", "", resp.choices[0].message.content).strip().strip("`")
             data = json.loads(raw)
             if isinstance(data, list):
                 return [{
-                    "question":       str(d.get("question","")),
-                    "option_a":       str(d.get("option_a","")),
-                    "option_b":       str(d.get("option_b","")),
-                    "option_c":       str(d.get("option_c","")),
-                    "option_d":       str(d.get("option_d","")),
-                    "correct_answer": str(d.get("correct_answer","A")).upper()[0],
-                    "explanation":    str(d.get("explanation","")),
+                    "question":       str(d.get("question", "")),
+                    "option_a":       str(d.get("option_a", "")),
+                    "option_b":       str(d.get("option_b", "")),
+                    "option_c":       str(d.get("option_c", "")),
+                    "option_d":       str(d.get("option_d", "")),
+                    "correct_answer": str(d.get("correct_answer", "A")).upper()[0],
+                    "explanation":    str(d.get("explanation", "")),
                 } for d in data if d.get("question")][:count]
         except Exception as e:
             print(f"MCQ error: {e}")
         return []
- 
+
     # ── Short questions ────────────────────────────────────────
     def generate_short_questions(self, text, count=5):
         if not self.client:
@@ -592,10 +735,11 @@ class AIAssistant:
                 model="llama-3.3-70b-versatile",
                 temperature=0.7, max_tokens=900,
             )
-            raw  = re.sub(r"```[a-z]*", "", resp.choices[0].message.content).strip().strip("`")
+            raw = re.sub(
+                r"```[a-z]*", "", resp.choices[0].message.content).strip().strip("`")
             data = json.loads(raw)
             if isinstance(data, list):
-                return [{"question": str(d.get("question","")), "answer": str(d.get("answer",""))}
+                return [{"question": str(d.get("question", "")), "answer": str(d.get("answer", ""))}
                         for d in data if d.get("question") and d.get("answer")][:count]
         except Exception as e:
             print(f"Short question error: {e}")

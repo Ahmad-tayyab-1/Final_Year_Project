@@ -406,13 +406,13 @@ html, body {
     display: flex; flex-direction: column;
     overflow: hidden;
     max-height: 90vh;
+    background: #000;
 }
 .yt-embed-wrap {
     position: relative;
-    padding-top: 56.25%;     /* 16:9 */
-    flex-shrink: 0;
+    flex: 1;
+    min-height: 0;
     background: #000;
-    min-height: 400px;
 }
 .yt-embed-wrap iframe {
     position: absolute; inset: 0;
@@ -420,10 +420,7 @@ html, body {
     border: none;
 }
 .yt-transcript {
-    flex: 1; min-height: 0;
-    overflow-y: auto;
-    padding: 20px 24px;
-    background: #252d3d;
+    display: none;
 }
 .yt-transcript h4 {
     font-size: 12px; font-weight: 700; letter-spacing: .07em;
@@ -956,6 +953,13 @@ function appendMsg(role, text) {
     feed.appendChild(row);
     feed.scrollTop = feed.scrollHeight;
 }
+function scrollMessageStartIntoView(row) {
+    const feed = document.getElementById('chatFeed');
+    if (!feed || !row) return;
+    const feedTop = feed.getBoundingClientRect().top;
+    const rowTop = row.getBoundingClientRect().top;
+    feed.scrollTop = Math.max(0, feed.scrollTop + rowTop - feedTop - 12);
+}
 function appendAIMsg(text, pageRef) {
     const feed = document.getElementById('chatFeed');
     const row  = document.createElement('div');
@@ -967,7 +971,7 @@ function appendAIMsg(text, pageRef) {
                      <div class="msg-bubble"><div class="ai-md"></div>${cite}</div>`;
     row.querySelector('.ai-md').innerHTML = marked.parse(text);
     feed.appendChild(row);
-    feed.scrollTop = feed.scrollHeight;
+    scrollMessageStartIntoView(row);
 }
 function appendTyping() {
     const feed = document.getElementById('chatFeed');
