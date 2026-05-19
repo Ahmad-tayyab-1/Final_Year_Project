@@ -55,6 +55,177 @@
             --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
         }
 
+        [data-theme="dark"] {
+            --ink: #f9fafb;
+            --ink-soft: #e5e7eb;
+            --surface: #0d1117;
+            --surface-2: #161b27;
+            --border: #1f2937;
+            --border-2: #374151;
+            --text: #e5e7eb;
+            --text-soft: #9ca3af;
+            --text-muted: #6b7280;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, .3);
+            --shadow: 0 4px 16px rgba(0, 0, 0, .3);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, .4);
+            --shadow-xl: 0 24px 64px rgba(0, 0, 0, .5);
+        }
+
+        [data-theme="dark"] body {
+            background: #0d1117;
+            color: #e5e7eb;
+        }
+
+        [data-theme="dark"] .navbar {
+            background: rgba(13, 17, 23, 0.9) !important;
+            border-color: #1f2937 !important;
+        }
+
+        [data-theme="dark"] .navbar.scrolled {
+            background: rgba(13, 17, 23, 0.98) !important;
+        }
+
+        [data-theme="dark"] .page-body {
+            background: #161b27 !important;
+            border-color: #1f2937 !important;
+        }
+
+        [data-theme="dark"] .nav-brand-text {
+            color: #f9fafb !important;
+        }
+
+        [data-theme="dark"] .nav-link {
+            color: #9ca3af !important;
+        }
+
+        /* Cards */
+        [data-theme="dark"] .doc-card {
+            background: #1e2435 !important;
+            border-color: #2d3748 !important;
+        }
+
+        [data-theme="dark"] .doc-card h3,
+        [data-theme="dark"] .doc-card .card-title,
+        [data-theme="dark"] .doc-card a,
+        [data-theme="dark"] .doc-card p,
+        [data-theme="dark"] .doc-card span,
+        [data-theme="dark"] .card-title {
+            color: #e5e7eb !important;
+        }
+
+        /* Stats */
+        [data-theme="dark"] [class*="stat"] {
+            background: #161b27 !important;
+            border-color: #1f2937 !important;
+            color: #e5e7eb !important;
+        }
+
+        /* Inputs */
+        [data-theme="dark"] input[type="text"],
+        [data-theme="dark"] input[type="url"],
+        [data-theme="dark"] input[type="email"],
+        [data-theme="dark"] textarea,
+        [data-theme="dark"] .form-input,
+        [data-theme="dark"] .yt-url-input {
+            background: #161b27 !important;
+            border-color: #374151 !important;
+            color: #e5e7eb !important;
+        }
+
+        [data-theme="dark"] input::placeholder,
+        [data-theme="dark"] textarea::placeholder {
+            color: #6b7280 !important;
+        }
+
+        /* Upload page */
+        [data-theme="dark"] .sidebar-illo {
+            background: #1e2435 !important;
+        }
+
+        [data-theme="dark"] .upload-sidebar {
+            background: #161b27 !important;
+        }
+
+        [data-theme="dark"] .upload-main {
+            background: #0d1117 !important;
+        }
+
+        /* Document viewer page */
+        [data-theme="dark"] .doc-bar {
+            background: #0d1117 !important;
+        }
+
+        [data-theme="dark"] .panel-left {
+            background: #161b27 !important;
+        }
+
+        [data-theme="dark"] .tab-bar {
+            background: #1e2435 !important;
+            border-color: #2d3748 !important;
+        }
+
+        [data-theme="dark"] .tab-btn {
+            color: #9ca3af !important;
+        }
+
+        [data-theme="dark"] .tab-btn.active {
+            background: #161b27 !important;
+            color: #818cf8 !important;
+        }
+
+        [data-theme="dark"] .chat-input-area {
+            background: #161b27 !important;
+            border-color: #2d3748 !important;
+        }
+
+        [data-theme="dark"] .chat-input {
+            background: #0d1117 !important;
+            border-color: #374151 !important;
+            color: #e5e7eb !important;
+        }
+
+        [data-theme="dark"] .msg-row.ai .msg-bubble {
+            background: #1e2435 !important;
+            color: #e5e7eb !important;
+        }
+
+        [data-theme="dark"] .viewer-toolbar {
+            background: #1e2435 !important;
+        }
+
+        [data-theme="dark"] .panel-right {
+            background: #0d1117 !important;
+        }
+
+        [data-theme="dark"] .pane-actions {
+            background: #1e2435 !important;
+            border-color: #2d3748 !important;
+        }
+
+        [data-theme="dark"] .pane-btn {
+            background: #161b27 !important;
+            border-color: #374151 !important;
+            color: #9ca3af !important;
+        }
+
+        [data-theme="dark"] .split {
+            background: #0d1117 !important;
+        }
+
+        /* Card icon area */
+        [data-theme="dark"] .doc-card .card-icon-wrap,
+        [data-theme="dark"] .doc-card>div:first-child,
+        [data-theme="dark"] .card-thumb,
+        [data-theme="dark"] .doc-icon-wrap {
+            background: #1e2435 !important;
+        }
+
+        [data-theme="dark"] .card-type-badge {
+            background: #1e2435 !important;
+            color: #9ca3af !important;
+            border-color: #374151 !important;
+        }
+
         html {
             scroll-behavior: smooth;
         }
@@ -442,12 +613,16 @@
                 </div>
                 <span class="nav-brand-text">Docu<span>Learn</span></span>
             </a>
-
             <button class="nav-toggle" id="navToggle" aria-label="Menu">
                 <i class="fas fa-bars"></i>
             </button>
 
             <div class="nav-links" id="navLinks">
+                <button id="themeToggle" onclick="toggleTheme()" style="background:none; border:1px solid var(--border); border-radius:8px;
+                   padding:6px 10px; cursor:pointer; color:var(--text-soft);
+                   font-size:16px; line-height:1; transition:all .2s;" onmouseover="this.style.borderColor='#6366f1';" onmouseout="this.style.borderColor='var(--border)';">
+                    <span id="themeIcon">🌙</span>
+                </button>
                 {% if user.is_authenticated %}
                 <span class="nav-link" style="color: var(--text-soft); font-weight: bold; cursor: default;">
                     <i class="fas fa-user-circle"></i> {{ user.username }}
@@ -523,6 +698,22 @@
             el.style.animationDelay = `${i * 80}ms`;
             el.style.animationFillMode = 'both';
         });
+        // ── Dark / Light mode ─────────────────────────────────
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            document.getElementById('themeIcon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', newTheme);
+        }
+
+        (function () {
+            const saved = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+            const icon = document.getElementById('themeIcon');
+            if (icon) icon.textContent = saved === 'dark' ? '☀️' : '🌙';
+        })();
     </script>
 
     {% block extra_js %}{% endblock %}
