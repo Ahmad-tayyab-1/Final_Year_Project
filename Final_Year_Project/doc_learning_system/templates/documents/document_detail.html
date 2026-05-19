@@ -129,7 +129,7 @@
         flex: 1;
         min-height: 0;
         /* critical: must be 0, not a vh value */
-        overflow: hidden;
+        overflow: auto;
     }
 
     /* ── Left panel ────────────────────────────────────────────── */
@@ -733,7 +733,7 @@
         display: flex;
         flex-direction: column;
         background: #1a1f2e;
-        overflow: hidden;
+        overflow: visible;
     }
 
     .viewer-toolbar {
@@ -1114,6 +1114,16 @@
         font-family: monospace;
         font-size: 12px;
     }
+
+    .docx-wrapper {
+        width: auto !important;
+        padding: 0 !important;
+    }
+
+    .docx-wrapper>section.docx {
+        margin: 0 !important;
+        width: auto !important;
+    }
 </style>
 {% endblock %}
 
@@ -1341,7 +1351,9 @@
 
         {% elif document.file_type == 'docx' or document.file_type == 'doc' %}
         <!-- DOCX: Full-fidelity client-side rendering via docx-preview -->
-        <div id="docxContainer" style="flex:1; min-height:0; overflow-y:auto; background:white; padding:20px;"></div>
+        <div style="flex:1; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch;">
+            <div id="docxContainer" style="display:inline-block; min-width:100%; background:white; padding:16px; box-sizing:border-box;"></div>
+        </div>
         <div id="docxLoading" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#94a3b8; font-size:14px;">
             <i class="fas fa-spinner fa-spin" style="margin-right:8px;"></i> Rendering document...
         </div>
