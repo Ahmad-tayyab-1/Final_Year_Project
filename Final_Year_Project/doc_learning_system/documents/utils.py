@@ -437,6 +437,26 @@ class YouTubeProcessor:
         except Exception:
             return {"video_url": video_url}
 
+    def get_webshare_proxy(self):
+        from urllib.parse import quote
+        import random
+        proxies = [
+            ("23.95.150.145", "6114"),
+            ("45.38.107.97", "6014"),
+            ("38.154.203.95", "5863"),
+            ("198.105.121.200", "6462"),
+            ("64.137.96.74", "6641"),
+            ("198.23.243.226", "6361"),
+            ("209.127.138.10", "5784"),
+            ("2.57.21.2", "7239"),
+            ("84.247.60.125", "6095"),
+            ("2.57.20.2", "6983"),
+        ]
+        ip, port = random.choice(proxies)
+        proxy_user = quote(os.environ.get('PROXY_USERNAME', ''))
+        proxy_pass = quote(os.environ.get('PROXY_PASSWORD', ''))
+        return f"http://{proxy_user}:{proxy_pass}@{ip}:{port}"
+
     def get_transcript(self, video_id: str):
         """
         Returns (transcript_text, video_title_or_None).
@@ -458,10 +478,7 @@ class YouTubeProcessor:
         # Build proxy for Render (cloud) environment
         proxy = None
         if 'RENDER' in os.environ:
-            proxy_user = os.environ.get('PROXY_USERNAME', '')
-            proxy_pass = os.environ.get('PROXY_PASSWORD', '')
-            if proxy_user and proxy_pass:
-                proxy = f"http://{proxy_user}:{proxy_pass}@p.webshare.io:80"
+            proxy = self.get_webshare_proxy()
 
         try:
             # v1.x: api.fetch(); v0.x: YouTubeTranscriptApi.get_transcript()
