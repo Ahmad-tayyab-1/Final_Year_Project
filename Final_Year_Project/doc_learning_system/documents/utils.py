@@ -472,6 +472,23 @@ class YouTubeProcessor:
                 session = Session()
                 cj = http.cookiejar.MozillaCookieJar(tmp.name)
                 cj.load(ignore_discard=True, ignore_expires=True)
+                cookies_to_remove = []
+                for cookie in cj:
+                    try:
+                        # Test if the cookie's value and name can be encoded to latin-1
+                        if cookie.value:
+                            cookie.value.encode('latin-1')
+                        if cookie.name:
+                            cookie.name.encode('latin-1')
+                    except UnicodeEncodeError:
+                        # If it fails, mark it for removal
+                        cookies_to_remove.append(cookie)
+
+                # Safely clear out the problematic cookies from the jar
+                for cookie in cookies_to_remove:
+                    cj.clear(cookie.domain, cookie.path, cookie.name)
+                # === NEWLY ADDED CODE END ===
+
                 session.cookies = cj
                 api = YouTubeTranscriptApi(http_client=session)
             else:
