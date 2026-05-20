@@ -436,81 +436,147 @@ class YouTubeProcessor:
             }
         except Exception:
             return {"video_url": video_url}
-
     def get_transcript(self, video_id: str):
-        import requests
-        import re
-        from xml.etree import ElementTree
+        """
+        Returns (transcript_text, video_title_or_None).
+        On Render: tries Invidious instances first, falls back to youtube-transcript-api.
+        Locally: uses youtube-transcript-api directly.
+        """
+        is_render = 'RENDER' in os.environ
 
-        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        if is_render:
+            # ── PRIMARY: Invidious (no IP blocks) ──────────────────────────
+            INVIDIOUS_INSTANCES = [
+                "https://inv.nadeko.net",
+                "https://invidious.privacydev.net",
+                "https://yt.cdaut.de",
+                "https://invidious.nerdvpn.de",
+            ]
+
+            import logging
+            for base in INVIDIOUS_INSTANCES:
+                try:
+                    # Step 1: get caption track list
+                    r = requests.get(
+                        f"{base}/api/v1/captions/{video_id}",
+                        timeout=10,
+                    )
+                    r.raise_for_status()
+                    captions = r.json().get("captions", [])
+                    if not captions:
+                        logging.warning(f"[Invidious] {base} — no captions for {video_id}")
+                        continue
+
+                    # Step 2: prefer English, fall back to first available
+                    track = next(
+                        (c for c in captions if c.get("languageCode", "").startswith("en")),
+                        captions[0],
+                    )
+
+                    # Step 3: fetch the VTT file
+                    vtt_url = base + track["url"]
+                    vtt_r = requests.get(vtt_url, timeout=10)
+                    vtt_r.raise_for_status()
+
+                    # Step 4: parse VTT → timestamped lines
+                    transcript_text = self._parse_vtt(vtt_r.text)
+                    if not transcript_text:
+                        continue
+
+                    metadata = self.get_video_metadata(video_id)
+                    return transcript_text, metadata.get("title")
+
+                except Exception as e:
+                    logging.warning(f"[Invidious] {base} failed: {e}")
+                    continue
+
+            # ── FALLBACK: youtube-transcript-api (may still work sometimes) ─
+            logging.warning("[Transcript] All Invidious instances failed, trying youtube-transcript-api")
+
+        # ── LOCAL (or Render fallback) ─────────────────────────────────────
+        try:
+            from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
+        except ImportError:
+            raise RuntimeError("youtube-transcript-api is not installed.")
+
+        api = YouTubeTranscriptApi()
+        transcript_list = None
 
         try:
-            # Fetch video page
-            response = requests.get(
-                video_url,
-                headers={
-                    "User-Agent": (
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/120.0.0.0 Safari/537.36"
-                    ),
-                    "Accept-Language": "en-US,en;q=0.9"
-                },
-                timeout=15,
-            )
-
-            # Check if YouTube routed us to the CAPTCHA page
-            if "sorry/index" in response.url:
+            transcript_list = api.fetch(video_id) if hasattr(api, 'fetch') else YouTubeTranscriptApi.get_transcript(video_id)
+        except TranscriptsDisabled:
+            raise RuntimeError("This video has captions disabled.")
+        except NoTranscriptFound:
+            try:
+                tl = api.list(video_id) if hasattr(api, 'list') else YouTubeTranscriptApi.list_transcripts(video_id)
+                try:
+                    transcript_list = tl.find_generated_transcript(["en"]).fetch()
+                except Exception:
+                    transcript_list = next(iter(tl)).fetch()
+            except Exception:
                 raise RuntimeError(
-                    "YouTube blocked the request with a CAPTCHA. The server IP is temporarily flagged.")
-
-            html = response.text
-
-            # Find the specific transcript track (timedtext)
-            match = re.search(
-                r'"baseUrl":"(https://www.youtube.com/api/timedtext[^"]+)"',
-                html
-            )
-
-            if not match:
-                raise RuntimeError("No transcript track found for this video.")
-
-            transcript_url = (
-                match.group(1)
-                .replace("\\u0026", "&")
-            )
-
-            # Download transcript XML
-            transcript_response = requests.get(
-                transcript_url,
-                headers={"User-Agent": "Mozilla/5.0"},
-                timeout=15,
-            )
-
-            xml_root = ElementTree.fromstring(transcript_response.text)
-
-            lines = []
-
-            for node in xml_root.findall("text"):
-                start = float(node.attrib.get("start", 0))
-                text = "".join(node.itertext())
-
-                # Decode basic HTML entities that YouTube leaves in
-                text = text.replace("&amp;", "&").replace(
-                    "&#39;", "'").replace("&quot;", '"')
-
-                mins = int(start // 60)
-                secs = int(start % 60)
-
-                lines.append(f"[{mins:02d}:{secs:02d}] {text}")
-
-            transcript_text = "\n".join(lines)
-            metadata = self.get_video_metadata(video_id)
-
-            return transcript_text, metadata.get("title")
-
+                    "No transcript available for this video. "
+                    "Only videos with captions (auto or manual) are supported."
+                )
         except Exception as e:
             raise RuntimeError(f"Could not fetch transcript: {e}")
+
+        lines = []
+        for entry in transcript_list:
+            if isinstance(entry, dict):
+                start, text = entry["start"], entry["text"]
+            else:
+                start, text = entry.start, entry.text
+            mins, secs = int(start // 60), int(start % 60)
+            lines.append(f"[{mins:02d}:{secs:02d}] {text}")
+
+        transcript_text = "\n".join(lines)
+        metadata = self.get_video_metadata(video_id)
+        return transcript_text, metadata.get("title")
+
+
+    def _parse_vtt(self, vtt_text: str) -> str:
+        """Parse a WebVTT string into [MM:SS] timestamped lines."""
+        import re
+        lines_out = []
+        lines = vtt_text.splitlines()
+        i = 0
+        seen_texts = set()  # VTT files often have duplicate lines near each other
+
+        while i < len(lines):
+            line = lines[i].strip()
+            # Match a timestamp cue line: 00:00:01.000 --> 00:00:04.000
+            ts_match = re.match(
+                r"(\d{1,2}:\d{2}:\d{2}\.\d+|\d{2}:\d{2}\.\d+)\s+-->\s+", line
+            )
+            if ts_match:
+                ts_raw = ts_match.group(1)
+                # Normalise HH:MM:SS.mmm or MM:SS.mmm → seconds
+                parts = ts_raw.split(":")
+                if len(parts) == 3:
+                    h, m, s = int(parts[0]), int(parts[1]), float(parts[2])
+                else:
+                    h, m, s = 0, int(parts[0]), float(parts[1])
+                total = h * 3600 + m * 60 + s
+                mins, secs = int(total // 60), int(total % 60)
+
+                # Collect text lines that follow until blank line
+                i += 1
+                text_parts = []
+                while i < len(lines) and lines[i].strip():
+                    clean = re.sub(r"<[^>]+>", "", lines[i].strip())  # strip VTT inline tags
+                    if clean:
+                        text_parts.append(clean)
+                    i += 1
+
+                text = " ".join(text_parts).strip()
+                if text and text not in seen_texts:
+                    seen_texts.add(text)
+                    lines_out.append(f"[{mins:02d}:{secs:02d}] {text}")
+            else:
+                i += 1
+
+        return "\n".join(lines_out)
         '''
     def get_transcript(self, video_id: str):
         """
