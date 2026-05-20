@@ -461,9 +461,10 @@ class YouTubeProcessor:
                 import http.cookiejar
                 from requests import Session
 
-                cookies_data = base64.b64decode(cookies_b64).decode('utf-8')
+                cookies_data = base64.b64decode(
+                    cookies_b64).decode('utf-8', errors='ignore')
                 tmp = tempfile.NamedTemporaryFile(
-                    mode='w', suffix='.txt', delete=False)
+                    mode='w', encoding='utf-8', suffix='.txt', delete=False)
                 tmp.write(cookies_data)
                 tmp.flush()
                 tmp.close()
