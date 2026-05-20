@@ -438,6 +438,81 @@ class YouTubeProcessor:
             return {"video_url": video_url}
 
     def get_transcript(self, video_id: str):
+        import requests
+        import re
+        from xml.etree import ElementTree
+
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+
+        try:
+            # Fetch video page
+            response = requests.get(
+                video_url,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/120.0.0.0 Safari/537.36"
+                    ),
+                    "Accept-Language": "en-US,en;q=0.9"
+                },
+                timeout=15,
+            )
+
+            # Check if YouTube routed us to the CAPTCHA page
+            if "sorry/index" in response.url:
+                raise RuntimeError(
+                    "YouTube blocked the request with a CAPTCHA. The server IP is temporarily flagged.")
+
+            html = response.text
+
+            # Find the specific transcript track (timedtext)
+            match = re.search(
+                r'"baseUrl":"(https://www.youtube.com/api/timedtext[^"]+)"',
+                html
+            )
+
+            if not match:
+                raise RuntimeError("No transcript track found for this video.")
+
+            transcript_url = (
+                match.group(1)
+                .replace("\\u0026", "&")
+            )
+
+            # Download transcript XML
+            transcript_response = requests.get(
+                transcript_url,
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=15,
+            )
+
+            xml_root = ElementTree.fromstring(transcript_response.text)
+
+            lines = []
+
+            for node in xml_root.findall("text"):
+                start = float(node.attrib.get("start", 0))
+                text = "".join(node.itertext())
+
+                # Decode basic HTML entities that YouTube leaves in
+                text = text.replace("&amp;", "&").replace(
+                    "&#39;", "'").replace("&quot;", '"')
+
+                mins = int(start // 60)
+                secs = int(start % 60)
+
+                lines.append(f"[{mins:02d}:{secs:02d}] {text}")
+
+            transcript_text = "\n".join(lines)
+            metadata = self.get_video_metadata(video_id)
+
+            return transcript_text, metadata.get("title")
+
+        except Exception as e:
+            raise RuntimeError(f"Could not fetch transcript: {e}")
+        '''
+    def get_transcript(self, video_id: str):
         """
         Returns (transcript_text, video_title_or_None).
         Raises RuntimeError on failure.
@@ -540,6 +615,7 @@ class YouTubeProcessor:
         transcript_text = "\n".join(lines)
         metadata = self.get_video_metadata(video_id)
         return transcript_text, metadata.get("title")
+'''
 
 
 class WebSearch:
