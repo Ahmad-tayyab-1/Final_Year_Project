@@ -437,7 +437,6 @@ class YouTubeProcessor:
         except Exception:
             return {"video_url": video_url}
 
-
     def get_transcript(self, video_id: str):
         """
         Returns (transcript_text, video_title_or_None).
@@ -451,7 +450,12 @@ class YouTubeProcessor:
         # Build API instance
         if 'RENDER' in os.environ:
             cookies_b64 = os.environ.get('YOUTUBE_COOKIES_B64', '')
+            import logging
+            logging.warning(f"COOKIES_B64 length: {len(cookies_b64)}")
             if cookies_b64:
+               # if 'RENDER' in os.environ:
+                #    cookies_b64 = os.environ.get('YOUTUBE_COOKIES_B64', '')
+               # if cookies_b64:
                 import base64
                 import tempfile
                 import http.cookiejar
