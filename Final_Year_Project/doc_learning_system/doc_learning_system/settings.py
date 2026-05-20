@@ -91,18 +91,14 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ── Environment-aware subpath ──────────────────────────────────
-IS_RENDER = 'RENDER' in os.environ
-SUBPATH = '' if IS_RENDER else '/fyp'
-
-FORCE_SCRIPT_NAME = None if IS_RENDER else '/fyp'
-STATIC_URL = '/static/' if IS_RENDER else '/fyp/static/'
+SUBPATH = os.environ.get('SUBPATH', '')
+FORCE_SCRIPT_NAME = SUBPATH if SUBPATH else None
+STATIC_URL = f'{SUBPATH}/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-MEDIA_URL = '/media/' if IS_RENDER else '/fyp/media/'
+MEDIA_URL = f'{SUBPATH}/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760
 LOGIN_DEFAULT_REDIRECT = f'{SUBPATH}/'
