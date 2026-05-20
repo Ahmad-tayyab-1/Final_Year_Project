@@ -439,61 +439,119 @@ class YouTubeProcessor:
     def get_transcript(self, video_id: str):
         """
         Returns (transcript_text, video_title_or_None).
-        On Render: tries Invidious instances first, falls back to youtube-transcript-api.
-        Locally: uses youtube-transcript-api directly.
+        On Render : Invidious instances → Supadata (if key set) → clear error.
+        Locally   : youtube-transcript-api directly.
         """
+        import logging
         is_render = 'RENDER' in os.environ
 
         if is_render:
-            # ── PRIMARY: Invidious (no IP blocks) ──────────────────────────
+            # ── PRIMARY: Invidious public instances ────────────────────────
+            # Full updated list from https://api.invidious.io/instances.json
             INVIDIOUS_INSTANCES = [
-                "https://inv.nadeko.net",
+                "https://invidious.fdn.fr",
+                "https://inv.us.projectsegfau.lt",
+                "https://invidious.lunar.icu",
                 "https://invidious.privacydev.net",
-                "https://yt.cdaut.de",
+                "https://iv.datura.network",
+                "https://invidious.perennialte.ch",
+                "https://yt.drgnz.club",
+                "https://inv.nadeko.net",
                 "https://invidious.nerdvpn.de",
+                "https://yt.cdaut.de",
             ]
 
-            import logging
+            last_error = ""
             for base in INVIDIOUS_INSTANCES:
                 try:
-                    # Step 1: get caption track list
+                    # Step 1: fetch caption track list
                     r = requests.get(
                         f"{base}/api/v1/captions/{video_id}",
-                        timeout=10,
+                        timeout=8,
                     )
-                    r.raise_for_status()
-                    captions = r.json().get("captions", [])
-                    if not captions:
-                        logging.warning(f"[Invidious] {base} — no captions for {video_id}")
+                    if r.status_code != 200:
+                        logging.warning(f"[Invidious] {base} → HTTP {r.status_code}")
+                        last_error = f"HTTP {r.status_code} from {base}"
                         continue
 
-                    # Step 2: prefer English, fall back to first available
+                    captions = r.json().get("captions", [])
+                    if not captions:
+                        logging.warning(f"[Invidious] {base} → no captions available")
+                        last_error = "No captions found on this video"
+                        continue
+
+                    # Step 2: prefer English, fall back to first track
                     track = next(
                         (c for c in captions if c.get("languageCode", "").startswith("en")),
                         captions[0],
                     )
 
-                    # Step 3: fetch the VTT file
+                    # Step 3: fetch VTT file
                     vtt_url = base + track["url"]
                     vtt_r = requests.get(vtt_url, timeout=10)
-                    vtt_r.raise_for_status()
-
-                    # Step 4: parse VTT → timestamped lines
-                    transcript_text = self._parse_vtt(vtt_r.text)
-                    if not transcript_text:
+                    if vtt_r.status_code != 200:
+                        logging.warning(f"[Invidious] {base} VTT fetch → HTTP {vtt_r.status_code}")
+                        last_error = f"VTT fetch failed HTTP {vtt_r.status_code}"
                         continue
 
+                    # Step 4: parse VTT
+                    transcript_text = self._parse_vtt(vtt_r.text)
+                    if not transcript_text.strip():
+                        logging.warning(f"[Invidious] {base} → VTT parsed empty")
+                        last_error = "VTT file was empty after parsing"
+                        continue
+
+                    logging.info(f"[Invidious] SUCCESS via {base}")
                     metadata = self.get_video_metadata(video_id)
                     return transcript_text, metadata.get("title")
 
+                except requests.exceptions.Timeout:
+                    logging.warning(f"[Invidious] {base} → timeout")
+                    last_error = f"{base} timed out"
                 except Exception as e:
-                    logging.warning(f"[Invidious] {base} failed: {e}")
-                    continue
+                    logging.warning(f"[Invidious] {base} → {e}")
+                    last_error = str(e)
 
-            # ── FALLBACK: youtube-transcript-api (may still work sometimes) ─
-            logging.warning("[Transcript] All Invidious instances failed, trying youtube-transcript-api")
+            # ── SECONDARY: Supadata (free tier, 100 req/month) ─────────────
+            supadata_key = os.environ.get("SUPADATA_API_KEY", "")
+            if supadata_key:
+                try:
+                    logging.info("[Supadata] Trying Supadata API...")
+                    r = requests.get(
+                        "https://api.supadata.ai/v1/youtube/transcript",
+                        params={"videoId": video_id, "lang": "en"},
+                        headers={"x-api-key": supadata_key},
+                        timeout=15,
+                    )
+                    r.raise_for_status()
+                    content = r.json().get("content", [])
+                    if content:
+                        lines = []
+                        for seg in content:
+                            start = seg.get("offset", 0) / 1000  # ms → seconds
+                            text  = seg.get("text", "").strip()
+                            mins, secs = int(start // 60), int(start % 60)
+                            if text:
+                                lines.append(f"[{mins:02d}:{secs:02d}] {text}")
+                        transcript_text = "\n".join(lines)
+                        if transcript_text:
+                            logging.info("[Supadata] SUCCESS")
+                            metadata = self.get_video_metadata(video_id)
+                            return transcript_text, metadata.get("title")
+                except Exception as e:
+                    logging.warning(f"[Supadata] failed: {e}")
 
-        # ── LOCAL (or Render fallback) ─────────────────────────────────────
+            # ── ALL FAILED on Render ────────────────────────────────────────
+            # Do NOT fall through to youtube-transcript-api here —
+            # it will always be IP-blocked on cloud hosts.
+            raise RuntimeError(
+                "Could not fetch the transcript on the server. "
+                "YouTube blocks cloud IPs and all bypass services are currently unavailable. "
+                "Please try again in a few minutes, or try a different video. "
+                f"(Last error: {last_error})"
+            )
+
+        # ── LOCAL: youtube-transcript-api directly ─────────────────────────
         try:
             from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
         except ImportError:
@@ -530,9 +588,8 @@ class YouTubeProcessor:
             mins, secs = int(start // 60), int(start % 60)
             lines.append(f"[{mins:02d}:{secs:02d}] {text}")
 
-        transcript_text = "\n".join(lines)
         metadata = self.get_video_metadata(video_id)
-        return transcript_text, metadata.get("title")
+        return "\n".join(lines), metadata.get("title")
 
 
     def _parse_vtt(self, vtt_text: str) -> str:
