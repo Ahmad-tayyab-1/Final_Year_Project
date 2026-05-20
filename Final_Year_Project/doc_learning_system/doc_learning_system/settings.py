@@ -16,31 +16,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-y1k)f%pkd+p3^h7_$mh*fxcg6dv*%#t3=w$v#s7xyd4ke(43!)'
 SECRET_KEY = os.environ.get(
     'SECRET_KEY', 'ndKqr55dd8VQfYy6CqmChTBWGADkV65Q_f%pkd+p3^h7_$mh*fxcg6dv*%#t3=w$v#s7xyd4ke')
-# SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
-DEBUG = 'RENDER' not in os.environ
-ALLOWED_HOSTS = []
 
+DEBUG = 'RENDER' not in os.environ
+
+ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 else:
-    ALLOWED_HOSTS.append('localhost')
-    ALLOWED_HOSTS.append('127.0.0.1')
-
-# Application definition
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '10.0.2.11'])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -49,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'documents'
+    'documents',
 ]
 
 MIDDLEWARE = [
@@ -82,10 +70,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'doc_learning_system.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -93,72 +77,39 @@ DATABASES = {
     }
 }
 
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-# STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
 
-STATIC_URL = '/static/'
+# ── Environment-aware subpath ──────────────────────────────────
+IS_RENDER = 'RENDER' in os.environ
+SUBPATH = '' if IS_RENDER else '/fyp'
+
+FORCE_SCRIPT_NAME = None if IS_RENDER else '/fyp'
+STATIC_URL = '/static/' if IS_RENDER else '/fyp/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-
-MEDIA_URL = '/media/'
+MEDIA_URL = '/media/' if IS_RENDER else '/fyp/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-
-# GROQ API KEY will now be loaded from .env file
-# os.environ['GROQ_API_KEY'] is no longer hardcoded
-
-# Security settings for production
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760
 
-# Authentication Settings
-LOGIN_REDIRECT_URL = '/fyp/'
-LOGOUT_REDIRECT_URL = '/fyp/login'
-LOGIN_URL = '/fyp/login'
+LOGIN_REDIRECT_URL = f'{SUBPATH}/'
+LOGOUT_REDIRECT_URL = f'{SUBPATH}/login/'
+LOGIN_URL = f'{SUBPATH}/login/'
 
-# Custom Authentication Backends
 AUTHENTICATION_BACKENDS = [
     'documents.backends.EmailOrUsernameModelBackend',
     'django.contrib.auth.backends.ModelBackend',
