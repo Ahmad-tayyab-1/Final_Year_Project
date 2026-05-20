@@ -5,15 +5,18 @@
 {% block extra_css %}
 <style>
     /* ── Scrollability fix ──────────────────────────────────── */
-    html, body {
+    html,
+    body {
         height: auto !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
     }
+
     /* base.html sets overflow:hidden on .page-body — undo it here */
     .page-body {
         overflow: visible !important;
     }
+
     .app-shell {
         height: auto !important;
         overflow: visible !important;
@@ -32,28 +35,47 @@
     }
 
     .page-eyebrow {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: #eff6ff; border: 1px solid #bfdbfe;
-        color: #3b82f6; padding: 5px 12px;
-        border-radius: 20px; font-size: 11px; font-weight: 700;
-        letter-spacing: .06em; text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #3b82f6;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
         margin-bottom: 18px;
     }
+
     .page-title {
         font-family: 'Fraunces', Georgia, serif;
-        font-size: 32px; font-weight: 700;
-        color: var(--ink); letter-spacing: -.4px;
-        line-height: 1.2; margin-bottom: 8px;
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -.4px;
+        line-height: 1.2;
+        margin-bottom: 8px;
     }
-    .page-title span { color: var(--accent); }
+
+    .page-title span {
+        color: var(--accent);
+    }
+
     .page-sub {
-        font-size: 14px; color: var(--text-soft);
-        line-height: 1.65; margin-bottom: 32px; max-width: 420px;
+        font-size: 14px;
+        color: var(--text-soft);
+        line-height: 1.65;
+        margin-bottom: 32px;
+        max-width: 420px;
     }
 
     /* Source switcher tabs */
     .source-tabs {
-        display: flex; gap: 0;
+        display: flex;
+        gap: 0;
         background: var(--surface-2);
         border: 1.5px solid var(--border);
         border-radius: 10px;
@@ -61,231 +83,487 @@
         margin-bottom: 28px;
         width: fit-content;
     }
+
     .source-tab {
         padding: 9px 20px;
-        border: none; background: transparent;
-        border-radius: 7px; cursor: pointer;
-        font-size: 13px; font-weight: 600;
+        border: none;
+        background: transparent;
+        border-radius: 7px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
         font-family: 'DM Sans', sans-serif;
         color: var(--text-muted);
-        display: flex; align-items: center; gap: 7px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
         transition: all .2s var(--ease);
     }
-    .source-tab i { font-size: 14px; }
+
+    .source-tab i {
+        font-size: 14px;
+    }
+
     .source-tab.active {
-        background: white; color: var(--accent);
+        background: white;
+        color: var(--accent);
         box-shadow: var(--shadow-sm);
     }
-    .source-tab.yt-tab.active { color: #ef4444; }
+
+    .source-tab.yt-tab.active {
+        color: #ef4444;
+    }
 
     /* Form panels */
-    .form-panel { display: none; }
-    .form-panel.active { display: block; }
+    .form-panel {
+        display: none;
+    }
+
+    .form-panel.active {
+        display: block;
+    }
 
     /* Drop zone */
     .drop-zone {
         border: 2px dashed var(--border-2);
         border-radius: var(--radius);
         padding: 36px 20px;
-        text-align: center; cursor: pointer;
+        text-align: center;
+        cursor: pointer;
         transition: all .25s var(--ease);
         margin-bottom: 24px;
-        position: relative; background: var(--surface-2);
+        position: relative;
+        background: var(--surface-2);
     }
-    .drop-zone:hover, .drop-zone.drag-over {
-        border-color: var(--accent); background: #eef2ff; transform: scale(1.01);
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+        border-color: var(--accent);
+        background: var(--surface-2);
+        transform: scale(1.01);
     }
+
     .drop-zone input[type="file"] {
-        position: absolute; inset: 0; opacity: 0; cursor: pointer; width:100%; height:100%;
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
     }
+
     .dz-icon-wrap {
-        width: 56px; height: 56px;
-        background: linear-gradient(135deg,var(--accent),var(--accent-2));
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
         border-radius: 14px;
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         margin: 0 auto 14px;
         box-shadow: 0 4px 16px var(--accent-glow);
         transition: transform .3s var(--ease-spring);
     }
-    .drop-zone:hover .dz-icon-wrap { transform: translateY(-4px) scale(1.05); }
-    .dz-icon-wrap i { color: white; font-size: 24px; }
-    .dz-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 5px; }
-    .dz-sub   { font-size: 12px; color: var(--text-muted); }
-    .dz-sub strong { color: var(--accent); }
-    .dz-formats {
-        display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; margin-top: 14px;
+
+    .drop-zone:hover .dz-icon-wrap {
+        transform: translateY(-4px) scale(1.05);
     }
+
+    .dz-icon-wrap i {
+        color: white;
+        font-size: 24px;
+    }
+
+    .dz-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 5px;
+    }
+
+    .dz-sub {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .dz-sub strong {
+        color: var(--accent);
+    }
+
+    .dz-formats {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+    }
+
     .dz-tag {
-        background: white; border: 1px solid var(--border);
-        padding: 2px 9px; border-radius: 5px;
-        font-size: 11px; font-weight: 700;
-        color: var(--text-soft); letter-spacing: .04em;
+        background: white;
+        border: 1px solid var(--border);
+        padding: 2px 9px;
+        border-radius: 5px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-soft);
+        letter-spacing: .04em;
     }
 
     /* File preview */
     .file-preview {
-        display: none; align-items: center; gap: 11px;
-        background: #eff6ff; border: 1px solid #bfdbfe;
-        border-radius: 9px; padding: 12px 14px; margin-top: 12px;
+        display: none;
+        align-items: center;
+        gap: 11px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 9px;
+        padding: 12px 14px;
+        margin-top: 12px;
     }
-    .file-preview.visible { display: flex; }
+
+    .file-preview.visible {
+        display: flex;
+    }
+
     .file-preview-icon {
-        width: 34px; height: 34px; background: #3b82f6;
-        border-radius: 7px; display: flex; align-items: center;
-        justify-content: center; flex-shrink: 0;
+        width: 34px;
+        height: 34px;
+        background: #3b82f6;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
-    .file-preview-icon i { color: white; font-size: 14px; }
-    .file-preview-name { flex:1; font-size:13px; font-weight:600; color:#1e40af; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .file-preview-size { font-size:11px; color:#3b82f6; }
+
+    .file-preview-icon i {
+        color: white;
+        font-size: 14px;
+    }
+
+    .file-preview-name {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e40af;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .file-preview-size {
+        font-size: 11px;
+        color: #3b82f6;
+    }
 
     /* YouTube URL panel */
     .yt-url-input-wrap {
-        position: relative; margin-bottom: 6px;
+        position: relative;
+        margin-bottom: 6px;
     }
+
     .yt-url-icon {
-        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-        color: #ef4444; font-size: 18px; pointer-events: none;
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #ef4444;
+        font-size: 18px;
+        pointer-events: none;
     }
+
     .yt-url-input {
-        width: 100%; padding: 13px 14px 13px 44px;
+        width: 100%;
+        padding: 13px 14px 13px 44px;
         border: 1.5px solid var(--border);
         border-radius: var(--radius-sm);
-        font-size: 14px; font-family: 'DM Sans',sans-serif;
-        color: var(--text); background: white; outline: none;
+        font-size: 14px;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--text);
+        background: white;
+        outline: none;
         transition: all .2s var(--ease);
     }
+
     .yt-url-input:focus {
         border-color: #ef4444;
-        box-shadow: 0 0 0 3px rgba(239,68,68,.1);
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, .1);
     }
-    .yt-url-input::placeholder { color: var(--text-muted); }
+
+    .yt-url-input::placeholder {
+        color: var(--text-muted);
+    }
 
     .yt-hint {
-        font-size: 12px; color: var(--text-muted);
-        margin-bottom: 20px; line-height: 1.5; padding: 0 2px;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 20px;
+        line-height: 1.5;
+        padding: 0 2px;
     }
+
     .yt-hint code {
-        background: var(--surface-2); border: 1px solid var(--border);
-        padding: 1px 6px; border-radius: 4px;
-        font-size: 11px; color: var(--text-soft);
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        color: var(--text-soft);
     }
 
     /* Shared form elements */
-    .form-group { margin-bottom: 20px; }
-    .form-label {
-        display: block; font-size: 12px; font-weight: 700;
-        color: var(--ink); margin-bottom: 7px; letter-spacing: .03em;
+    .form-group {
+        margin-bottom: 20px;
     }
-    .form-label .req { color: var(--danger); margin-left: 3px; }
+
+    .form-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 7px;
+        letter-spacing: .03em;
+    }
+
+    .form-label .req {
+        color: var(--danger);
+        margin-left: 3px;
+    }
+
     .form-input {
-        width: 100%; padding: 12px 14px;
+        width: 100%;
+        padding: 12px 14px;
         border: 1.5px solid var(--border);
         border-radius: var(--radius-sm);
-        font-size: 14px; font-family: 'DM Sans',sans-serif;
-        color: var(--text); background: white; outline: none;
+        font-size: 14px;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--text);
+        background: white;
+        outline: none;
         transition: all .2s var(--ease);
     }
+
     .form-input:focus {
         border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, .1);
     }
-    .form-input::placeholder { color: var(--text-muted); }
+
+    .form-input::placeholder {
+        color: var(--text-muted);
+    }
 
     /* Submit button */
     .btn-submit {
-        width: 100%; padding: 15px;
-        border: none; border-radius: 11px;
-        font-size: 15px; font-weight: 700;
-        font-family: 'DM Sans',sans-serif;
+        width: 100%;
+        padding: 15px;
+        border: none;
+        border-radius: 11px;
+        font-size: 15px;
+        font-weight: 700;
+        font-family: 'DM Sans', sans-serif;
         cursor: pointer;
-        display: flex; align-items: center; justify-content: center; gap: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
         transition: all .2s var(--ease-spring);
-        position: relative; overflow: hidden;
+        position: relative;
+        overflow: hidden;
     }
+
     .btn-submit-doc {
-        background: linear-gradient(135deg,var(--accent),var(--accent-2));
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
         color: white;
         box-shadow: 0 4px 16px var(--accent-glow);
     }
-    .btn-submit-doc:hover { transform: translateY(-2px); box-shadow: 0 8px 24px var(--accent-glow); }
+
+    .btn-submit-doc:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px var(--accent-glow);
+    }
 
     .btn-submit-yt {
-        background: linear-gradient(135deg,#ef4444,#dc2626);
+        background: linear-gradient(135deg, #ef4444, #dc2626);
         color: white;
-        box-shadow: 0 4px 16px rgba(239,68,68,.3);
+        box-shadow: 0 4px 16px rgba(239, 68, 68, .3);
     }
-    .btn-submit-yt:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(239,68,68,.4); }
+
+    .btn-submit-yt:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(239, 68, 68, .4);
+    }
 
     .btn-spinner {
-        display: none; width: 16px; height: 16px;
-        border: 2.5px solid rgba(255,255,255,.3);
-        border-top-color: white; border-radius: 50%;
+        display: none;
+        width: 16px;
+        height: 16px;
+        border: 2.5px solid rgba(255, 255, 255, .3);
+        border-top-color: white;
+        border-radius: 50%;
         animation: spin .8s linear infinite;
     }
-    .btn-submit.loading { pointer-events:none; opacity:.85; }
-    .btn-submit.loading .btn-spinner { display:block; }
-    .btn-submit.loading .btn-text { display:none; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .btn-submit.loading {
+        pointer-events: none;
+        opacity: .85;
+    }
+
+    .btn-submit.loading .btn-spinner {
+        display: block;
+    }
+
+    .btn-submit.loading .btn-text {
+        display: none;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
 
     /* ── Right – Sidebar ──────────────────────────────────── */
     .upload-sidebar {
         background: var(--surface-2);
         padding: 44px 36px;
-        display: flex; flex-direction: column; gap: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
     }
+
     .sidebar-illo {
         border-radius: var(--radius);
         overflow: hidden;
-        background: linear-gradient(135deg,#eef2ff,#f5f3ff);
+        background: linear-gradient(135deg, #eef2ff, #f5f3ff);
         height: 160px;
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
-    .sidebar-illo i { font-size: 52px; color: var(--accent); opacity: .5; }
+
+    .sidebar-illo i {
+        font-size: 52px;
+        color: var(--accent);
+        opacity: .5;
+    }
 
     .sidebar-block h4 {
         font-family: 'Fraunces', Georgia, serif;
-        font-size: 16px; font-weight: 700;
-        color: var(--ink); margin-bottom: 14px;
-        display: flex; align-items: center; gap: 8px;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    .sidebar-block h4 i { color: var(--accent); font-size: 14px; }
-    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-    .feature-item {
-        display: flex; align-items: flex-start; gap: 10px;
-        font-size: 13px; color: var(--text-soft); line-height: 1.5;
-    }
-    .feature-bullet {
-        width: 20px; height: 20px;
-        background: linear-gradient(135deg,var(--accent),var(--accent-2));
-        border-radius: 5px;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0; margin-top: 1px;
-    }
-    .feature-bullet i { color: white; font-size: 9px; }
 
-    .format-row { display: flex; gap: 8px; flex-wrap: wrap; }
-    .fmt-card {
-        background: white; border: 1px solid var(--border);
-        border-radius: 9px; padding: 9px 12px;
-        display: flex; align-items: center; gap: 7px;
-        font-size: 12px; font-weight: 700; color: var(--text-soft);
+    .sidebar-block h4 i {
+        color: var(--accent);
+        font-size: 14px;
     }
-    .fmt-card i { font-size: 17px; }
-    .fmt-card.pdf  i { color: #ef4444; }
-    .fmt-card.docx i { color: #3b82f6; }
-    .fmt-card.pptx i { color: #f97316; }
-    .fmt-card.txt  i { color: #64748b; }
-    .fmt-card.yt   i { color: #ef4444; }
+
+    .feature-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--text-soft);
+        line-height: 1.5;
+    }
+
+    .feature-bullet {
+        width: 20px;
+        height: 20px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .feature-bullet i {
+        color: white;
+        font-size: 9px;
+    }
+
+    .format-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .fmt-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 9px 12px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-soft);
+    }
+
+    .fmt-card i {
+        font-size: 17px;
+    }
+
+    .fmt-card.pdf i {
+        color: #ef4444;
+    }
+
+    .fmt-card.docx i {
+        color: #3b82f6;
+    }
+
+    .fmt-card.pptx i {
+        color: #f97316;
+    }
+
+    .fmt-card.txt i {
+        color: #64748b;
+    }
+
+    .fmt-card.yt i {
+        color: #ef4444;
+    }
 
     /* Responsive */
     @media (max-width: 860px) {
-        .upload-page { grid-template-columns: 1fr; }
-        .upload-main { padding: 36px 28px; border-right: none; border-bottom: 1px solid var(--border); }
-        .upload-sidebar { padding: 28px; }
+        .upload-page {
+            grid-template-columns: 1fr;
+        }
+
+        .upload-main {
+            padding: 36px 28px;
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .upload-sidebar {
+            padding: 28px;
+        }
     }
+
     @media (max-width: 480px) {
-        .upload-main { padding: 28px 18px; }
-        .page-title { font-size: 26px; }
+        .upload-main {
+            padding: 28px 18px;
+        }
+
+        .page-title {
+            font-size: 26px;
+        }
     }
 </style>
 {% endblock %}
@@ -316,8 +594,7 @@
             <form method="post" enctype="multipart/form-data" id="uploadForm" action="{% url 'documents:upload' %}">
                 {% csrf_token %}
                 <div class="drop-zone" id="dropZone">
-                    <input type="file" id="fileInput" name="file"
-                           accept=".pdf,.docx,.pptx,.txt,.doc,.xlsx" required>
+                    <input type="file" id="fileInput" name="file" accept=".pdf,.docx,.pptx,.txt,.doc,.xlsx" required>
                     <div class="dz-icon-wrap"><i class="fas fa-cloud-arrow-up"></i></div>
                     <p class="dz-title">Drag &amp; drop your file here</p>
                     <p class="dz-sub">or <strong>click to browse</strong></p>
@@ -341,8 +618,7 @@
 
                 <div class="form-group" style="margin-top:20px">
                     <label class="form-label" for="docTitle">Title <span class="req">*</span></label>
-                    <input type="text" id="docTitle" name="title" class="form-input"
-                           placeholder="e.g. Machine Learning — Chapter 3">
+                    <input type="text" id="docTitle" name="title" class="form-input" placeholder="e.g. Machine Learning — Chapter 3">
                 </div>
 
                 <button type="submit" class="btn-submit btn-submit-doc" id="docSubmit">
@@ -361,10 +637,7 @@
                     <label class="form-label">YouTube URL <span class="req">*</span></label>
                     <div class="yt-url-input-wrap">
                         <i class="fa-brands fa-youtube yt-url-icon"></i>
-                        <input type="url" name="youtube_url" id="ytUrlInput"
-                               class="yt-url-input"
-                               placeholder="https://www.youtube.com/watch?v=..."
-                               required>
+                        <input type="url" name="youtube_url" id="ytUrlInput" class="yt-url-input" placeholder="https://www.youtube.com/watch?v=..." required>
                     </div>
                     <div class="yt-hint">
                         Supports: <code>youtube.com/watch?v=...</code> and <code>youtu.be/...</code> links.
@@ -374,8 +647,7 @@
 
                 <div class="form-group">
                     <label class="form-label" for="ytTitle">Title <span class="req">*</span></label>
-                    <input type="text" id="ytTitle" name="title" class="form-input"
-                           placeholder="e.g. Python Tutorial by Corey Schafer">
+                    <input type="text" id="ytTitle" name="title" class="form-input" placeholder="e.g. Python Tutorial by Corey Schafer">
                 </div>
 
                 <button type="submit" class="btn-submit btn-submit-yt" id="ytSubmit">
@@ -427,7 +699,7 @@
                 <div class="fmt-card docx"><i class="fas fa-file-word"></i> DOCX</div>
                 <div class="fmt-card pptx"><i class="fas fa-file-powerpoint"></i> PPTX</div>
                 <div class="fmt-card txt"> <i class="fas fa-file-lines"></i> TXT</div>
-                <div class="fmt-card yt">  <i class="fa-brands fa-youtube"></i> YouTube</div>
+                <div class="fmt-card yt"> <i class="fa-brands fa-youtube"></i> YouTube</div>
             </div>
         </div>
     </div>
@@ -437,59 +709,59 @@
 
 {% block extra_js %}
 <script>
-/* ── Source switcher ──────────────────────────────────────── */
-function switchSource(type) {
-    document.getElementById('tabDoc').classList.toggle('active', type === 'doc');
-    document.getElementById('tabYT').classList.toggle('active',  type === 'yt');
-    document.getElementById('panelDoc').classList.toggle('active', type === 'doc');
-    document.getElementById('panelYT').classList.toggle('active',  type === 'yt');
-}
-
-/* ── File drag & drop ─────────────────────────────────────── */
-const dropZone   = document.getElementById('dropZone');
-const fileInput  = document.getElementById('fileInput');
-const preview    = document.getElementById('filePreview');
-const previewName = document.getElementById('previewName');
-const previewSize = document.getElementById('previewSize');
-const previewIcon = document.getElementById('previewIcon');
-const docTitle    = document.getElementById('docTitle');
-const iconMap = { pdf:'fa-file-pdf', docx:'fa-file-word', pptx:'fa-file-powerpoint', txt:'fa-file-lines' };
-
-function showPreview(file) {
-    const ext  = file.name.split('.').pop().toLowerCase();
-    const kb   = (file.size / 1024).toFixed(0);
-    const mb   = (file.size / 1048576).toFixed(2);
-    previewName.textContent = file.name;
-    previewSize.textContent = file.size > 1048576 ? `${mb} MB` : `${kb} KB`;
-    previewIcon.className   = `fas ${iconMap[ext] || 'fa-file'}`;
-    preview.classList.add('visible');
-    if (!docTitle.value) docTitle.value = file.name.replace(/\.[^/.]+$/, '');
-}
-
-fileInput.addEventListener('change', () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); });
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-    e.preventDefault(); dropZone.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) { fileInput.files = e.dataTransfer.files; showPreview(e.dataTransfer.files[0]); }
-});
-
-/* ── Submit loaders ───────────────────────────────────────── */
-document.getElementById('uploadForm').addEventListener('submit', () => {
-    document.getElementById('docSubmit').classList.add('loading');
-});
-document.getElementById('ytForm').addEventListener('submit', () => {
-    document.getElementById('ytSubmit').classList.add('loading');
-});
-
-/* ── Auto-fill YouTube title from URL ─────────────────────── */
-document.getElementById('ytUrlInput').addEventListener('blur', function() {
-    const url   = this.value.trim();
-    const title = document.getElementById('ytTitle');
-    if (url && !title.value) {
-        const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-        if (m) title.placeholder = `YouTube video (${m[1]})`;
+    /* ── Source switcher ──────────────────────────────────────── */
+    function switchSource(type) {
+        document.getElementById('tabDoc').classList.toggle('active', type === 'doc');
+        document.getElementById('tabYT').classList.toggle('active', type === 'yt');
+        document.getElementById('panelDoc').classList.toggle('active', type === 'doc');
+        document.getElementById('panelYT').classList.toggle('active', type === 'yt');
     }
-});
+
+    /* ── File drag & drop ─────────────────────────────────────── */
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('filePreview');
+    const previewName = document.getElementById('previewName');
+    const previewSize = document.getElementById('previewSize');
+    const previewIcon = document.getElementById('previewIcon');
+    const docTitle = document.getElementById('docTitle');
+    const iconMap = { pdf: 'fa-file-pdf', docx: 'fa-file-word', pptx: 'fa-file-powerpoint', txt: 'fa-file-lines' };
+
+    function showPreview(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        const kb = (file.size / 1024).toFixed(0);
+        const mb = (file.size / 1048576).toFixed(2);
+        previewName.textContent = file.name;
+        previewSize.textContent = file.size > 1048576 ? `${mb} MB` : `${kb} KB`;
+        previewIcon.className = `fas ${iconMap[ext] || 'fa-file'}`;
+        preview.classList.add('visible');
+        if (!docTitle.value) docTitle.value = file.name.replace(/\.[^/.]+$/, '');
+    }
+
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault(); dropZone.classList.remove('drag-over');
+        if (e.dataTransfer.files[0]) { fileInput.files = e.dataTransfer.files; showPreview(e.dataTransfer.files[0]); }
+    });
+
+    /* ── Submit loaders ───────────────────────────────────────── */
+    document.getElementById('uploadForm').addEventListener('submit', () => {
+        document.getElementById('docSubmit').classList.add('loading');
+    });
+    document.getElementById('ytForm').addEventListener('submit', () => {
+        document.getElementById('ytSubmit').classList.add('loading');
+    });
+
+    /* ── Auto-fill YouTube title from URL ─────────────────────── */
+    document.getElementById('ytUrlInput').addEventListener('blur', function () {
+        const url = this.value.trim();
+        const title = document.getElementById('ytTitle');
+        if (url && !title.value) {
+            const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+            if (m) title.placeholder = `YouTube video (${m[1]})`;
+        }
+    });
 </script>
 {% endblock %}

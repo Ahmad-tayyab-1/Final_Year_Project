@@ -12,7 +12,12 @@
     <meta property="og:title" content="DocuLearn AI">
     <meta property="og:description" content="Turn any document or YouTube video into deep knowledge with AI-powered study tools.">
     <meta property="og:type" content="website">
-
+    <script>
+        (function () {
+            const saved = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
     <!-- Fonts: Fraunces (display) + DM Sans (body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -224,6 +229,27 @@
             background: #1e2435 !important;
             color: #9ca3af !important;
             border-color: #374151 !important;
+        }
+
+        [data-theme="dark"] .features-section,
+        [data-theme="dark"] .hero-section,
+        [data-theme="dark"] section {
+            background: #0d1117 !important;
+            color: #e5e7eb !important;
+        }
+
+        [data-theme="dark"] h1,
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3,
+        [data-theme="dark"] p {
+            color: #e5e7eb !important;
+        }
+
+        [data-theme="dark"] .feature-card,
+        [data-theme="dark"] [class*="card"] {
+            background: #161b27 !important;
+            border-color: #1f2937 !important;
+            color: #e5e7eb !important;
         }
 
         html {
@@ -708,12 +734,12 @@
             localStorage.setItem('theme', newTheme);
         }
 
-        (function () {
+
+        document.addEventListener('DOMContentLoaded', function () {
             const saved = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', saved);
             const icon = document.getElementById('themeIcon');
             if (icon) icon.textContent = saved === 'dark' ? '☀️' : '🌙';
-        })();
+        });
     </script>
 
     {% block extra_js %}{% endblock %}

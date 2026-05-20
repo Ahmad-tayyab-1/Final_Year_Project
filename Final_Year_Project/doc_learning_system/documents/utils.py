@@ -461,7 +461,7 @@ class YouTubeProcessor:
             proxy_user = os.environ.get('PROXY_USERNAME', '')
             proxy_pass = os.environ.get('PROXY_PASSWORD', '')
             if proxy_user and proxy_pass:
-                proxy = f"http://{proxy_user}:{proxy_pass}@proxy.webshare.io:80"
+                proxy = f"http://{proxy_user}:{proxy_pass}@p.webshare.io:80"
 
         try:
             # v1.x: api.fetch(); v0.x: YouTubeTranscriptApi.get_transcript()
