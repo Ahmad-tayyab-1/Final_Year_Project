@@ -455,12 +455,33 @@ class YouTubeProcessor:
         transcript_list = None
         api = YouTubeTranscriptApi()  # v1.x instance (no-op for v0.x if present)
 
+        # Build proxy for Render (cloud) environment
+        proxy = None
+        if 'RENDER' in os.environ:
+            proxy_user = os.environ.get('PROXY_USERNAME', '')
+            proxy_pass = os.environ.get('PROXY_PASSWORD', '')
+            if proxy_user and proxy_pass:
+                proxy = f"http://{proxy_user}:{proxy_pass}@proxy.webshare.io:80"
+
         try:
             # v1.x: api.fetch(); v0.x: YouTubeTranscriptApi.get_transcript()
             if hasattr(api, 'fetch'):
-                transcript_list = api.fetch(video_id)
+                if proxy:
+                    # v1.x proxy support via http_client
+                    import httpx
+                    http_client = httpx.Client(proxy=proxy)
+                    api_with_proxy = YouTubeTranscriptApi(
+                        http_client=http_client)
+                    transcript_list = api_with_proxy.fetch(video_id)
+                else:
+                    transcript_list = api.fetch(video_id)
             else:
-                transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+                if proxy:
+                    transcript_list = YouTubeTranscriptApi.get_transcript(
+                        video_id, proxies={"https": proxy, "http": proxy})
+                else:
+                    transcript_list = YouTubeTranscriptApi.get_transcript(
+                        video_id)
         except TranscriptsDisabled:
             raise RuntimeError("This video has captions disabled.")
         except NoTranscriptFound:
@@ -526,9 +547,11 @@ class WebSearch:
                     continue
                 title = title_el.get_text(" ", strip=True)
                 url = title_el.get("href", "")
-                snippet = snippet_el.get_text(" ", strip=True) if snippet_el else ""
+                snippet = snippet_el.get_text(
+                    " ", strip=True) if snippet_el else ""
                 if title and url:
-                    results.append({"title": title, "url": url, "snippet": snippet})
+                    results.append(
+                        {"title": title, "url": url, "snippet": snippet})
                 if len(results) >= max_results:
                     break
 
