@@ -437,78 +437,58 @@ class YouTubeProcessor:
         except Exception:
             return {"video_url": video_url}
 
-    def get_webshare_proxy(self):
-        from urllib.parse import quote
-        import random
-        proxies = [
-            ("23.95.150.145", "6114"),
-            ("45.38.107.97", "6014"),
-            ("38.154.203.95", "5863"),
-            ("198.105.121.200", "6462"),
-            ("64.137.96.74", "6641"),
-            ("198.23.243.226", "6361"),
-            ("209.127.138.10", "5784"),
-            ("2.57.21.2", "7239"),
-            ("84.247.60.125", "6095"),
-            ("2.57.20.2", "6983"),
-        ]
-        ip, port = random.choice(proxies)
-        proxy_user = quote(os.environ.get('PROXY_USERNAME', ''))
-        proxy_pass = quote(os.environ.get('PROXY_PASSWORD', ''))
-        return f"http://{proxy_user}:{proxy_pass}@{ip}:{port}"
 
     def get_transcript(self, video_id: str):
         """
         Returns (transcript_text, video_title_or_None).
         Raises RuntimeError on failure.
-        Compatible with youtube-transcript-api v0.x (dict) and v1.x (object attributes).
         """
         try:
             from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
         except ImportError:
-            raise RuntimeError(
-                "youtube-transcript-api is not installed. "
-                "Run: pip install youtube-transcript-api"
-            )
+            raise RuntimeError("youtube-transcript-api is not installed.")
 
-        # v1.x uses an instance; v0.x used class methods — detect and handle both
-        transcript_list = None
-        api = YouTubeTranscriptApi()  # v1.x instance (no-op for v0.x if present)
-
-        # Build proxy for Render (cloud) environment
-        proxy = None
+        # Build API instance
         if 'RENDER' in os.environ:
-            proxy = self.get_webshare_proxy()
+            cookies_b64 = os.environ.get('YOUTUBE_COOKIES_B64', '')
+            if cookies_b64:
+                import base64
+                import tempfile
+                import http.cookiejar
+                from requests import Session
+
+                cookies_data = base64.b64decode(cookies_b64).decode('utf-8')
+                tmp = tempfile.NamedTemporaryFile(
+                    mode='w', suffix='.txt', delete=False)
+                tmp.write(cookies_data)
+                tmp.flush()
+                tmp.close()
+
+                session = Session()
+                cj = http.cookiejar.MozillaCookieJar(tmp.name)
+                cj.load(ignore_discard=True, ignore_expires=True)
+                session.cookies = cj
+                api = YouTubeTranscriptApi(http_client=session)
+            else:
+                api = YouTubeTranscriptApi()
+        else:
+            api = YouTubeTranscriptApi()
+
+        transcript_list = None
 
         try:
-            # v1.x: api.fetch(); v0.x: YouTubeTranscriptApi.get_transcript()
             if hasattr(api, 'fetch'):
-                if proxy:
-                    # v1.x proxy support via http_client
-                    import httpx
-                    http_client = httpx.Client(proxy=proxy)
-                    api_with_proxy = YouTubeTranscriptApi(
-                        http_client=http_client)
-                    transcript_list = api_with_proxy.fetch(video_id)
-                else:
-                    transcript_list = api.fetch(video_id)
+                transcript_list = api.fetch(video_id)
             else:
-                if proxy:
-                    transcript_list = YouTubeTranscriptApi.get_transcript(
-                        video_id, proxies={"https": proxy, "http": proxy})
-                else:
-                    transcript_list = YouTubeTranscriptApi.get_transcript(
-                        video_id)
+                transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
         except TranscriptsDisabled:
             raise RuntimeError("This video has captions disabled.")
         except NoTranscriptFound:
-            # Try auto-generated captions in any available language
             try:
                 if hasattr(api, 'list'):
                     tl = api.list(video_id)
                 else:
                     tl = YouTubeTranscriptApi.list_transcripts(video_id)
-                # Prefer English auto-generated, fall back to first available
                 try:
                     transcript_list = tl.find_generated_transcript(
                         ["en"]).fetch()
@@ -522,15 +502,13 @@ class YouTubeProcessor:
         except Exception as e:
             raise RuntimeError(f"Could not fetch transcript: {e}")
 
-        # Build timestamped text.
-        # v0.x returns list-of-dicts; v1.x returns iterable of snippet objects.
+        # Build timestamped text
         lines = []
         for entry in transcript_list:
             if isinstance(entry, dict):
                 start = entry["start"]
                 text = entry["text"]
             else:
-                # v1.x object — attributes .start and .text
                 start = entry.start
                 text = entry.text
             mins = int(start // 60)
