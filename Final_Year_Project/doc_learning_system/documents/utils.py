@@ -436,6 +436,7 @@ class YouTubeProcessor:
             }
         except Exception:
             return {"video_url": video_url}
+
     def get_transcript(self, video_id: str):
         """
         Returns (transcript_text, video_title_or_None).
@@ -449,16 +450,16 @@ class YouTubeProcessor:
             # ── PRIMARY: Invidious public instances ────────────────────────
             # Full updated list from https://api.invidious.io/instances.json
             INVIDIOUS_INSTANCES = [
-                "https://invidious.fdn.fr",
-                "https://inv.us.projectsegfau.lt",
-                "https://invidious.lunar.icu",
-                "https://invidious.privacydev.net",
-                "https://iv.datura.network",
-                "https://invidious.perennialte.ch",
-                "https://yt.drgnz.club",
+                "https://invidious.io",
                 "https://inv.nadeko.net",
                 "https://invidious.nerdvpn.de",
-                "https://yt.cdaut.de",
+                "https://iv.ggtyler.dev",
+                "https://invidious.incogniweb.net",
+                "https://invidious.slipfox.xyz",
+                "https://invidious.reallyaweso.me",
+                "https://invidious.privacyredirect.com",
+                "https://yt.artemislena.eu",
+                "https://invidious.darkness.services",
             ]
 
             last_error = ""
@@ -470,19 +471,22 @@ class YouTubeProcessor:
                         timeout=8,
                     )
                     if r.status_code != 200:
-                        logging.warning(f"[Invidious] {base} → HTTP {r.status_code}")
+                        logging.warning(
+                            f"[Invidious] {base} → HTTP {r.status_code}")
                         last_error = f"HTTP {r.status_code} from {base}"
                         continue
 
                     captions = r.json().get("captions", [])
                     if not captions:
-                        logging.warning(f"[Invidious] {base} → no captions available")
+                        logging.warning(
+                            f"[Invidious] {base} → no captions available")
                         last_error = "No captions found on this video"
                         continue
 
                     # Step 2: prefer English, fall back to first track
                     track = next(
-                        (c for c in captions if c.get("languageCode", "").startswith("en")),
+                        (c for c in captions if c.get(
+                            "languageCode", "").startswith("en")),
                         captions[0],
                     )
 
@@ -490,14 +494,16 @@ class YouTubeProcessor:
                     vtt_url = base + track["url"]
                     vtt_r = requests.get(vtt_url, timeout=10)
                     if vtt_r.status_code != 200:
-                        logging.warning(f"[Invidious] {base} VTT fetch → HTTP {vtt_r.status_code}")
+                        logging.warning(
+                            f"[Invidious] {base} VTT fetch → HTTP {vtt_r.status_code}")
                         last_error = f"VTT fetch failed HTTP {vtt_r.status_code}"
                         continue
 
                     # Step 4: parse VTT
                     transcript_text = self._parse_vtt(vtt_r.text)
                     if not transcript_text.strip():
-                        logging.warning(f"[Invidious] {base} → VTT parsed empty")
+                        logging.warning(
+                            f"[Invidious] {base} → VTT parsed empty")
                         last_error = "VTT file was empty after parsing"
                         continue
 
@@ -529,7 +535,7 @@ class YouTubeProcessor:
                         lines = []
                         for seg in content:
                             start = seg.get("offset", 0) / 1000  # ms → seconds
-                            text  = seg.get("text", "").strip()
+                            text = seg.get("text", "").strip()
                             mins, secs = int(start // 60), int(start % 60)
                             if text:
                                 lines.append(f"[{mins:02d}:{secs:02d}] {text}")
@@ -561,14 +567,17 @@ class YouTubeProcessor:
         transcript_list = None
 
         try:
-            transcript_list = api.fetch(video_id) if hasattr(api, 'fetch') else YouTubeTranscriptApi.get_transcript(video_id)
+            transcript_list = api.fetch(video_id) if hasattr(
+                api, 'fetch') else YouTubeTranscriptApi.get_transcript(video_id)
         except TranscriptsDisabled:
             raise RuntimeError("This video has captions disabled.")
         except NoTranscriptFound:
             try:
-                tl = api.list(video_id) if hasattr(api, 'list') else YouTubeTranscriptApi.list_transcripts(video_id)
+                tl = api.list(video_id) if hasattr(
+                    api, 'list') else YouTubeTranscriptApi.list_transcripts(video_id)
                 try:
-                    transcript_list = tl.find_generated_transcript(["en"]).fetch()
+                    transcript_list = tl.find_generated_transcript(
+                        ["en"]).fetch()
                 except Exception:
                     transcript_list = next(iter(tl)).fetch()
             except Exception:
@@ -590,7 +599,6 @@ class YouTubeProcessor:
 
         metadata = self.get_video_metadata(video_id)
         return "\n".join(lines), metadata.get("title")
-
 
     def _parse_vtt(self, vtt_text: str) -> str:
         """Parse a WebVTT string into [MM:SS] timestamped lines."""
@@ -621,7 +629,8 @@ class YouTubeProcessor:
                 i += 1
                 text_parts = []
                 while i < len(lines) and lines[i].strip():
-                    clean = re.sub(r"<[^>]+>", "", lines[i].strip())  # strip VTT inline tags
+                    # strip VTT inline tags
+                    clean = re.sub(r"<[^>]+>", "", lines[i].strip())
                     if clean:
                         text_parts.append(clean)
                     i += 1
