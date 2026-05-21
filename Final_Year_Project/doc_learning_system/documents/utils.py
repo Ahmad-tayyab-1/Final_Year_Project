@@ -440,15 +440,47 @@ class YouTubeProcessor:
     def get_transcript(self, video_id: str):
         """
         Returns (transcript_text, video_title_or_None).
-        On Render : Invidious instances → Supadata (if key set) → clear error.
+        On Render : Supadata first → Invidious fallback → error.
         Locally   : youtube-transcript-api directly.
         """
         import logging
         is_render = 'RENDER' in os.environ
-
         if is_render:
-            # ── PRIMARY: Invidious public instances ────────────────────────
-            # Full updated list from https://api.invidious.io/instances.json
+            # ── PRIMARY: Supadata API (try multiple keys) ──────────────────────
+            supadata_keys = [
+                os.environ.get("SUPADATA_API_KEY", ""),
+                os.environ.get("SUPADATA_API_KEY_2", ""),
+            ]
+            supadata_keys = [k for k in supadata_keys if k]  # remove empty
+
+            for supadata_key in supadata_keys:
+                try:
+                    logging.info("[Supadata] Trying Supadata API...")
+                    r = requests.get(
+                        "https://api.supadata.ai/v1/youtube/transcript",
+                        params={"videoId": video_id, "lang": "en"},
+                        headers={"x-api-key": supadata_key},
+                        timeout=15,
+                    )
+                    r.raise_for_status()
+                    content = r.json().get("content", [])
+                    if content:
+                        lines = []
+                        for seg in content:
+                            start = seg.get("offset", 0) / 1000
+                            text = seg.get("text", "").strip()
+                            mins, secs = int(start // 60), int(start % 60)
+                            if text:
+                                lines.append(f"[{mins:02d}:{secs:02d}] {text}")
+                        transcript_text = "\n".join(lines)
+                        if transcript_text:
+                            logging.info("[Supadata] SUCCESS")
+                            metadata = self.get_video_metadata(video_id)
+                            return transcript_text, metadata.get("title")
+                except Exception as e:
+                    logging.warning(f"[Supadata] key failed: {e}")
+                    continue
+            # ── SECONDARY: Invidious public instances ──────────────────────
             INVIDIOUS_INSTANCES = [
                 "https://invidious.io",
                 "https://inv.nadeko.net",
@@ -465,7 +497,6 @@ class YouTubeProcessor:
             last_error = ""
             for base in INVIDIOUS_INSTANCES:
                 try:
-                    # Step 1: fetch caption track list
                     r = requests.get(
                         f"{base}/api/v1/captions/{video_id}",
                         timeout=8,
@@ -483,14 +514,12 @@ class YouTubeProcessor:
                         last_error = "No captions found on this video"
                         continue
 
-                    # Step 2: prefer English, fall back to first track
                     track = next(
                         (c for c in captions if c.get(
                             "languageCode", "").startswith("en")),
                         captions[0],
                     )
 
-                    # Step 3: fetch VTT file
                     vtt_url = base + track["url"]
                     vtt_r = requests.get(vtt_url, timeout=10)
                     if vtt_r.status_code != 200:
@@ -499,7 +528,6 @@ class YouTubeProcessor:
                         last_error = f"VTT fetch failed HTTP {vtt_r.status_code}"
                         continue
 
-                    # Step 4: parse VTT
                     transcript_text = self._parse_vtt(vtt_r.text)
                     if not transcript_text.strip():
                         logging.warning(
@@ -518,38 +546,7 @@ class YouTubeProcessor:
                     logging.warning(f"[Invidious] {base} → {e}")
                     last_error = str(e)
 
-            # ── SECONDARY: Supadata (free tier, 100 req/month) ─────────────
-            supadata_key = os.environ.get("SUPADATA_API_KEY", "")
-            if supadata_key:
-                try:
-                    logging.info("[Supadata] Trying Supadata API...")
-                    r = requests.get(
-                        "https://api.supadata.ai/v1/youtube/transcript",
-                        params={"videoId": video_id, "lang": "en"},
-                        headers={"x-api-key": supadata_key},
-                        timeout=15,
-                    )
-                    r.raise_for_status()
-                    content = r.json().get("content", [])
-                    if content:
-                        lines = []
-                        for seg in content:
-                            start = seg.get("offset", 0) / 1000  # ms → seconds
-                            text = seg.get("text", "").strip()
-                            mins, secs = int(start // 60), int(start % 60)
-                            if text:
-                                lines.append(f"[{mins:02d}:{secs:02d}] {text}")
-                        transcript_text = "\n".join(lines)
-                        if transcript_text:
-                            logging.info("[Supadata] SUCCESS")
-                            metadata = self.get_video_metadata(video_id)
-                            return transcript_text, metadata.get("title")
-                except Exception as e:
-                    logging.warning(f"[Supadata] failed: {e}")
-
-            # ── ALL FAILED on Render ────────────────────────────────────────
-            # Do NOT fall through to youtube-transcript-api here —
-            # it will always be IP-blocked on cloud hosts.
+            # ── ALL FAILED ─────────────────────────────────────────────────
             raise RuntimeError(
                 "Could not fetch the transcript on the server. "
                 "YouTube blocks cloud IPs and all bypass services are currently unavailable. "

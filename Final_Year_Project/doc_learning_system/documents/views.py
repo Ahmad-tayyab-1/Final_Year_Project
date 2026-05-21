@@ -219,7 +219,7 @@ def process_youtube(request):
     if not request.user.is_authenticated:
         _guest_add_doc(request, doc.id)
 
-    messages.success(request, f'"{doc.title}" processed. Transcript loaded.')
+    messages.success(request, f'"{doc.title}"')
     return redirect("documents:document_detail", doc_id=doc.id)
 
 
