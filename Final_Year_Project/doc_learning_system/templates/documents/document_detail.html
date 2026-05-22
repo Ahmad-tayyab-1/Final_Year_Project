@@ -960,19 +960,43 @@
         font-size: 10px;
     }
 
-    .sel-popup .count-control {
+    .sel-popup .mcq-stepper {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
         background: rgba(255, 255, 255, .06);
-        border-color: rgba(255, 255, 255, .09);
+        border: 1px solid rgba(255, 255, 255, .09);
+        border-radius: 6px;
+        padding: 3px;
         color: #e2e8f0;
-        min-height: 32px;
+        min-height: 31px;
     }
 
-    .sel-popup .count-control select {
+    .mcq-step-btn {
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: 5px;
+        background: transparent;
         color: #e2e8f0;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all .15s;
     }
 
-    .sel-popup .count-control option {
-        color: #111827;
+    .mcq-step-btn:hover {
+        background: rgba(99, 102, 241, .3);
+        color: white;
+    }
+
+    .mcq-step-value {
+        min-width: 22px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1;
     }
 
     /* ── Toast ─────────────────────────────────────────────────── */
@@ -1138,6 +1162,12 @@
         }
 
         .sel-btn {
+            flex: 1 1 42%;
+            justify-content: center;
+            min-height: 38px;
+        }
+
+        .sel-popup .mcq-stepper {
             flex: 1 1 42%;
             justify-content: center;
             min-height: 38px;
@@ -1458,19 +1488,15 @@
 <div class="sel-popup" id="selPopup">
     <button class="sel-btn" onclick="triggerExplain()"><i class="fas fa-lightbulb"></i> Explain</button>
     <button class="sel-btn" onclick="triggerFlashcard()"><i class="fas fa-layer-group"></i> Flashcard</button>
-    <label class="count-control" for="mcqPopupCount">
-        MCQs
-        <select id="mcqPopupCount" class="mcq-count-input" aria-label="Number of MCQs from selection">
-            <option value="3" selected>3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="9">9</option>
-            <option value="10">10</option>
-        </select>
-    </label>
+    <div class="mcq-stepper" aria-label="Number of MCQs from selection">
+        <button class="mcq-step-btn" type="button" onclick="adjustPopupMCQCount(-1)" aria-label="Fewer MCQs">
+            <i class="fas fa-minus"></i>
+        </button>
+        <span class="mcq-step-value" id="mcqPopupCount">3</span>
+        <button class="mcq-step-btn" type="button" onclick="adjustPopupMCQCount(1)" aria-label="More MCQs">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
     <button class="sel-btn" onclick="triggerMCQ()"><i class="fas fa-list-check"></i> MCQ</button>
     <button class="sel-btn" onclick="triggerQuestion()"><i class="fas fa-circle-question"></i> Question</button>
 </div>
@@ -1611,11 +1637,10 @@
         });
         document.querySelectorAll('.mcq-count-input').forEach(input => {
             input.addEventListener('change', () => {
-                document.querySelectorAll('.mcq-count-input').forEach(other => {
-                    other.value = input.value;
-                });
+                syncMCQCount(input.value);
             });
         });
+        syncMCQCount(document.getElementById('mcqCount')?.value || 3);
     });
 
     /* ── Toast ────────────────────────────────────────────────── */
@@ -1733,10 +1758,24 @@
     /* ── Generate ─────────────────────────────────────────────── */
     function getMCQCount() {
         const visiblePopupCount = selPopup.classList.contains('visible')
-            ? document.getElementById('mcqPopupCount')?.value
+            ? document.getElementById('mcqPopupCount')?.textContent
             : null;
         const value = parseInt(visiblePopupCount || document.getElementById('mcqCount')?.value || '3', 10);
         return Math.max(3, Math.min(value || 3, 10));
+    }
+
+    function syncMCQCount(value) {
+        const count = Math.max(3, Math.min(parseInt(value || '3', 10) || 3, 10));
+        document.querySelectorAll('.mcq-count-input').forEach(input => {
+            input.value = String(count);
+        });
+        const popupValue = document.getElementById('mcqPopupCount');
+        if (popupValue) popupValue.textContent = String(count);
+        return count;
+    }
+
+    function adjustPopupMCQCount(delta) {
+        syncMCQCount(getMCQCount() + delta);
     }
 
     async function generateContent(type, text, count) {
