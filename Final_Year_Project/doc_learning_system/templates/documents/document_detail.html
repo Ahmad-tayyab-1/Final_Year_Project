@@ -458,6 +458,30 @@
         font-size: 11px;
     }
 
+    .count-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 8px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        color: var(--text-soft);
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .count-control select {
+        height: 30px;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-weight: 700;
+        outline: none;
+        cursor: pointer;
+    }
+
     .pane-empty {
         text-align: center;
         padding: 40px 16px;
@@ -888,6 +912,16 @@
         display: flex;
     }
 
+    .textLayer,
+    .textLayer span,
+    .doc-paper,
+    .yt-transcript-text,
+    .docx-wrapper {
+        -webkit-user-select: text;
+        user-select: text;
+        -webkit-touch-callout: default;
+    }
+
     @keyframes popIn {
         from {
             opacity: 0;
@@ -924,6 +958,21 @@
 
     .sel-btn i {
         font-size: 10px;
+    }
+
+    .sel-popup .count-control {
+        background: rgba(255, 255, 255, .06);
+        border-color: rgba(255, 255, 255, .09);
+        color: #e2e8f0;
+        min-height: 32px;
+    }
+
+    .sel-popup .count-control select {
+        color: #e2e8f0;
+    }
+
+    .sel-popup .count-control option {
+        color: #111827;
     }
 
     /* ── Toast ─────────────────────────────────────────────────── */
@@ -1076,6 +1125,22 @@
 
         .doc-paper {
             padding: 24px;
+        }
+
+        .sel-popup {
+            left: 10px !important;
+            right: 10px;
+            bottom: 12px;
+            top: auto !important;
+            justify-content: center;
+            flex-wrap: wrap;
+            border-radius: 8px;
+        }
+
+        .sel-btn {
+            flex: 1 1 42%;
+            justify-content: center;
+            min-height: 38px;
         }
     }
 
@@ -1240,10 +1305,23 @@
         <!-- MCQs -->
         <div class="tab-pane" id="mcqs-pane">
             <div class="pane-actions">
-                <button class="pane-btn primary" onclick="generateContent('mcqs','',3)">
+                <label class="count-control" for="mcqCount">
+                    MCQs
+                    <select id="mcqCount" class="mcq-count-input" aria-label="Number of MCQs">
+                        <option value="3" selected>3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
+                </label>
+                <button class="pane-btn primary" onclick="generateContent('mcqs','',getMCQCount())">
                     <i class="fas fa-wand-magic-sparkles"></i> Generate
                 </button>
-                <button class="pane-btn" onclick="generateFromSelection('mcqs',2)">
+                <button class="pane-btn" onclick="generateFromSelection('mcqs',getMCQCount())">
                     <i class="fas fa-text-slash"></i> From Selection
                 </button>
             </div>
@@ -1380,6 +1458,19 @@
 <div class="sel-popup" id="selPopup">
     <button class="sel-btn" onclick="triggerExplain()"><i class="fas fa-lightbulb"></i> Explain</button>
     <button class="sel-btn" onclick="triggerFlashcard()"><i class="fas fa-layer-group"></i> Flashcard</button>
+    <label class="count-control" for="mcqPopupCount">
+        MCQs
+        <select id="mcqPopupCount" class="mcq-count-input" aria-label="Number of MCQs from selection">
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+        </select>
+    </label>
     <button class="sel-btn" onclick="triggerMCQ()"><i class="fas fa-list-check"></i> MCQ</button>
     <button class="sel-btn" onclick="triggerQuestion()"><i class="fas fa-circle-question"></i> Question</button>
 </div>
@@ -1422,21 +1513,37 @@
     let selectedText = '';
     const selPopup = document.getElementById('selPopup');
 
-    function handleTextSelection(e) {
+    function positionSelectionPopup(sel) {
+        if (!sel || sel.rangeCount === 0) return;
+        const r = sel.getRangeAt(0).getBoundingClientRect();
+        const popupWidth = Math.min(340, window.innerWidth - 20);
+        const x = Math.max(10, Math.min(r.left, window.innerWidth - popupWidth - 10));
+        const y = Math.max(10, Math.min(r.bottom + window.scrollY + 8, window.scrollY + window.innerHeight - 70));
+        selPopup.style.left = x + 'px';
+        selPopup.style.top = y + 'px';
+    }
+
+    function captureSelection(showPopup = true) {
         const sel = window.getSelection();
-        selectedText = (sel?.toString() || '').trim();
-        console.log('Text selected:', selectedText); // DEBUG
-        if (selectedText.length > 4) {
-            const r = sel.getRangeAt(0).getBoundingClientRect();
-            const x = Math.min(r.left, window.innerWidth - 340);
-            const y = r.bottom + window.scrollY + 8;
-            selPopup.style.left = x + 'px';
-            selPopup.style.top = y + 'px';
-            selPopup.classList.add('visible');
-            console.log('Popup shown at:', x, y); // DEBUG
-        } else {
+        const text = (sel?.toString() || '').trim();
+        if (text.length > 4) {
+            selectedText = text;
+            if (showPopup) {
+                try {
+                    positionSelectionPopup(sel);
+                    selPopup.classList.add('visible');
+                } catch (e) { }
+            }
+            return true;
+        }
+        if (showPopup) {
             selPopup.classList.remove('visible');
         }
+        return false;
+    }
+
+    function handleTextSelection(e) {
+        captureSelection(true);
     }
 
     // Also wire doc-paper (non-PDF)
@@ -1444,23 +1551,13 @@
 
     // Global mouseup listener to detect selections anywhere
     document.addEventListener('mouseup', () => {
-        const sel = window.getSelection();
-        const selectedText_temp = (sel?.toString() || '').trim();
-        console.log('Global mouseup - selected text:', selectedText_temp); // DEBUG
-        if (selectedText_temp.length > 4) {
-            selectedText = selectedText_temp;
-            console.log('Text captured:', selectedText); // DEBUG
-            try {
-                const r = sel.getRangeAt(0).getBoundingClientRect();
-                const x = Math.min(r.left, window.innerWidth - 340);
-                const y = r.bottom + window.scrollY + 8;
-                selPopup.style.left = x + 'px';
-                selPopup.style.top = y + 'px';
-                selPopup.classList.add('visible');
-            } catch (e) {
-                console.log('Error showing popup:', e); // DEBUG
-            }
-        }
+        captureSelection(true);
+    });
+
+    let selectionTimer;
+    document.addEventListener('selectionchange', () => {
+        clearTimeout(selectionTimer);
+        selectionTimer = setTimeout(() => captureSelection(false), 120);
     });
 
     // Clipboard listener to detect text copied from PDF viewer
@@ -1471,8 +1568,8 @@
             if (copiedText.length > 4) {
                 selectedText = copiedText.trim();
                 console.log('Clipboard text captured:', selectedText); // DEBUG
-                // Show popup at cursor position or centered
-                const x = Math.max(20, window.innerWidth - 340);
+                const popupWidth = Math.min(340, window.innerWidth - 20);
+                const x = Math.max(10, window.innerWidth - popupWidth - 10);
                 const y = Math.max(100, window.scrollY + 100);
                 selPopup.style.left = x + 'px';
                 selPopup.style.top = y + 'px';
@@ -1488,22 +1585,11 @@
     });
     document.addEventListener('touchend', (e) => {
         setTimeout(() => {
-            const sel = window.getSelection();
-            const text = (sel?.toString() || '').trim();
-            if (text.length > 4) {
-                selectedText = text;
-                try {
-                    const r = sel.getRangeAt(0).getBoundingClientRect();
-                    const x = Math.min(r.left, window.innerWidth - 340);
-                    const y = r.bottom + window.scrollY + 8;
-                    selPopup.style.left = x + 'px';
-                    selPopup.style.top = y + 'px';
-                    selPopup.classList.add('visible');
-                } catch (err) { }
-            } else {
+            const found = captureSelection(true);
+            if (!found) {
                 if (!selPopup.contains(e.target)) selPopup.classList.remove('visible');
             }
-        }, 300);
+        }, 650);
     });
     /* ── Tabs ─────────────────────────────────────────────────── */
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1522,6 +1608,13 @@
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.ai-md').forEach(el => {
             el.innerHTML = marked.parse(el.textContent);
+        });
+        document.querySelectorAll('.mcq-count-input').forEach(input => {
+            input.addEventListener('change', () => {
+                document.querySelectorAll('.mcq-count-input').forEach(other => {
+                    other.value = input.value;
+                });
+            });
         });
     });
 
@@ -1638,6 +1731,14 @@
     }
 
     /* ── Generate ─────────────────────────────────────────────── */
+    function getMCQCount() {
+        const visiblePopupCount = selPopup.classList.contains('visible')
+            ? document.getElementById('mcqPopupCount')?.value
+            : null;
+        const value = parseInt(visiblePopupCount || document.getElementById('mcqCount')?.value || '3', 10);
+        return Math.max(3, Math.min(value || 3, 10));
+    }
+
     async function generateContent(type, text, count) {
         console.log('generateContent called - type:', type, 'text:', text, 'count:', count); // DEBUG
         selPopup.classList.remove('visible');
@@ -1695,7 +1796,7 @@
     }
     function triggerMCQ() {
         console.log('triggerMCQ called'); // DEBUG
-        generateFromSelection('mcqs', 2);
+        generateFromSelection('mcqs', getMCQCount());
     }
     function triggerQuestion() {
         console.log('triggerQuestion called'); // DEBUG

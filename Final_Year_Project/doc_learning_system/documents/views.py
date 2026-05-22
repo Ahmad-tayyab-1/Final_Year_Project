@@ -18,6 +18,14 @@ from .utils import DocumentProcessor, AIAssistant, YouTubeProcessor, WebSearch
 GUEST_UPLOAD_LIMIT = 3
 
 
+def _bounded_int(value, default, minimum=1, maximum=10):
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        number = default
+    return max(minimum, min(number, maximum))
+
+
 def _casual_chat_response(message):
     """Handle greetings before sending the message into document Q&A."""
     normalized = re.sub(r"[^a-z0-9\s]", " ", message.lower()).strip()
@@ -350,7 +358,7 @@ def create_flashcards(request, doc_id):
     if doc is None:
         return JsonResponse({"error": "Please log in to use this feature."}, status=403)
     text = request.POST.get("text", doc.text_content)
-    count = min(int(request.POST.get("count", 5)), 10)
+    count = _bounded_int(request.POST.get("count"), 5, 1, 10)
     page_number = request.POST.get("page") or None
 
     created = []
@@ -369,7 +377,7 @@ def create_mcqs_from_text(request, doc_id):
     if doc is None:
         return JsonResponse({"error": "Please log in to use this feature."}, status=403)
     text = request.POST.get("text", doc.text_content)
-    count = min(int(request.POST.get("count", 3)), 10)
+    count = _bounded_int(request.POST.get("count"), 3, 3, 10)
     page_number = request.POST.get("page") or None
 
     created = []
@@ -396,7 +404,7 @@ def create_short_questions_from_text(request, doc_id):
     if doc is None:
         return JsonResponse({"error": "Please log in to use this feature."}, status=403)
     text = request.POST.get("text", doc.text_content)
-    count = min(int(request.POST.get("count", 5)), 10)
+    count = _bounded_int(request.POST.get("count"), 5, 1, 10)
     page_number = request.POST.get("page") or None
 
     created = []
