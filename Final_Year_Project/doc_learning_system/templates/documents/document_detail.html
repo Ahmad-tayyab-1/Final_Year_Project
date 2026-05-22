@@ -16,7 +16,7 @@
 
     .app-shell {
         height: 100vh;
-        padding: 14px 14px 0;
+        padding: 0;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -24,12 +24,32 @@
 
     /* navbar already has margin-bottom 28px from base — reduce it here */
     .navbar {
-        margin-bottom: 16px;
+        top: 0;
+        margin-bottom: 0;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+        border-top: 0;
+        padding: 10px 28px;
         flex-shrink: 0;
     }
 
+    .navbar .nav-brand-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .navbar a[href$="/upload/"] {
+        display: none;
+    }
+
     .alerts-wrap {
+        margin: 0;
         flex-shrink: 0;
+    }
+
+    .alerts-wrap .alert {
+        border-radius: 0;
     }
 
     /* page-body fills all remaining height */
@@ -40,7 +60,7 @@
         margin-bottom: 14px;
         display: flex;
         flex-direction: column;
-        border-radius: var(--radius-lg);
+        border-radius: 0;
         box-shadow: var(--shadow-xl);
         border: 1px solid var(--border);
         animation: none;
@@ -57,7 +77,7 @@
         background: #0d1117;
         flex-shrink: 0;
         border-bottom: 1px solid rgba(255, 255, 255, .07);
-        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        border-radius: 0;
     }
 
     .doc-bar-icon {
@@ -840,6 +860,56 @@
         background: rgba(250, 204, 21, .45);
     }
 
+    .docx-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        background: #f1f5f9;
+        padding: 20px;
+    }
+
+    .docx-container {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    .docx-wrapper {
+        background: transparent !important;
+        padding: 0 !important;
+        color: #111827;
+    }
+
+    .docx-wrapper>section.docx {
+        background: #ffffff !important;
+        width: 100% !important;
+        max-width: 900px !important;
+        min-width: 0 !important;
+        min-height: auto !important;
+        height: auto !important;
+        margin: 0 auto 18px !important;
+        padding: 48px !important;
+        box-sizing: border-box !important;
+        overflow-wrap: anywhere;
+        word-break: normal;
+        box-shadow: 0 6px 24px rgba(15, 23, 42, .16) !important;
+    }
+
+    .docx-wrapper,
+    .docx-wrapper>section.docx,
+    .docx-wrapper>section.docx article,
+    .docx-wrapper>section.docx div,
+    .docx-wrapper>section.docx p,
+    .docx-wrapper>section.docx table,
+    .docx-wrapper>section.docx tbody,
+    .docx-wrapper>section.docx tr,
+    .docx-wrapper>section.docx td,
+    .docx-wrapper>section.docx span {
+        background-color: #ffffff !important;
+    }
+
     /* YouTube embed */
     .yt-panel {
         flex: 1;
@@ -1210,17 +1280,6 @@
         font-size: 12px;
     }
 
-    .docx-wrapper {
-        width: auto !important;
-        padding: 0 !important;
-    }
-
-    .docx-wrapper>section.docx {
-        width: 100% !important;
-        min-width: unset !important;
-        max-width: 100% !important;
-
-    }
 </style>
 {% endblock %}
 
@@ -1461,8 +1520,8 @@
 
         {% elif document.file_type == 'docx' or document.file_type == 'doc' %}
         <!-- DOCX: Full-fidelity client-side rendering via docx-preview -->
-        <div style="flex:1; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch;">
-            <div id="docxContainer" style="display:inline-block; min-width:100%; background:white; padding:16px; box-sizing:border-box;"></div>
+        <div class="docx-scroll">
+            <div id="docxContainer" class="docx-container"></div>
         </div>
         <div id="docxLoading" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#94a3b8; font-size:14px;">
             <i class="fas fa-spinner fa-spin" style="margin-right:8px;"></i> Rendering document...
@@ -2001,6 +2060,18 @@
 
         if (!container) return;
 
+        function normalizeDocxBackground() {
+            container.style.background = 'transparent';
+            container.querySelectorAll('.docx-wrapper, section.docx, section.docx *').forEach(el => {
+                const bg = window.getComputedStyle(el).backgroundColor;
+                const isTransparent = bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent';
+                if (!isTransparent) {
+                    el.style.setProperty('background-color', '#ffffff', 'important');
+                    el.style.setProperty('background', '#ffffff', 'important');
+                }
+            });
+        }
+
         // Wait for docx-preview library to load
         function tryRender(attempts) {
             if (attempts <= 0) {
@@ -2020,15 +2091,17 @@
                     return window.docx.renderAsync(buf, container, null, {
                         className: "docx-wrapper",
                         inWrapper: true,
-                        ignoreWidth: false,
-                        ignoreHeight: false,
-                        breakPages: true,
+                        ignoreWidth: true,
+                        ignoreHeight: true,
+                        breakPages: false,
                         renderHeaders: true,
                         renderFooters: true,
                     });
                 })
                 .then(() => {
                     if (loading) loading.style.display = 'none';
+                    normalizeDocxBackground();
+                    setTimeout(normalizeDocxBackground, 150);
                     container.addEventListener('mouseup', handleTextSelection);
                 })
                 .catch(err => {
