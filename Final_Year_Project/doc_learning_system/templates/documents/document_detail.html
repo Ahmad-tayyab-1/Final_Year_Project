@@ -1187,6 +1187,8 @@
         .panel-right {
             height: 70vh;
             min-height: 400px;
+            width: 100%;
+            overflow: hidden;
         }
 
         .pdf-scroll {
@@ -1195,6 +1197,48 @@
 
         .doc-paper {
             padding: 28px 22px;
+        }
+
+        .docx-scroll {
+            width: 100%;
+            padding: 12px;
+            overflow-x: hidden;
+            background: #d9dee7;
+        }
+
+        .docx-container {
+            width: 100%;
+            max-width: none;
+        }
+
+        .docx-wrapper>section.docx {
+            background: #fffefb !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin-bottom: 12px !important;
+            padding: 24px 18px !important;
+            box-shadow: 0 3px 14px rgba(15, 23, 42, .14) !important;
+        }
+
+        .docx-wrapper>section.docx img,
+        .docx-wrapper>section.docx svg,
+        .docx-wrapper>section.docx canvas {
+            max-width: 100% !important;
+            height: auto !important;
+        }
+
+        .docx-wrapper>section.docx table {
+            max-width: 100% !important;
+            width: 100% !important;
+            table-layout: auto !important;
+        }
+
+        .docx-wrapper>section.docx p,
+        .docx-wrapper>section.docx span,
+        .docx-wrapper>section.docx td {
+            max-width: 100% !important;
+            overflow-wrap: anywhere !important;
+            white-space: normal !important;
         }
 
         .bar-btn span {
@@ -1219,6 +1263,15 @@
 
         .doc-paper {
             padding: 24px;
+        }
+
+        .docx-scroll {
+            padding: 8px;
+        }
+
+        .docx-wrapper>section.docx {
+            background: #fffefb !important;
+            padding: 18px 12px !important;
         }
 
         .sel-popup {
@@ -2072,6 +2125,48 @@
             });
         }
 
+        function normalizeDocxMobileLayout() {
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            const sections = container.querySelectorAll('section.docx');
+
+            sections.forEach(section => {
+                section.style.setProperty('box-sizing', 'border-box', 'important');
+                section.style.setProperty('max-width', '100%', 'important');
+
+                if (isMobile) {
+                    section.style.setProperty('width', '100%', 'important');
+                    section.style.setProperty('min-width', '0', 'important');
+                    section.style.setProperty('padding', '18px 12px', 'important');
+                    section.style.setProperty('background-color', '#fffefb', 'important');
+                }
+
+                section.querySelectorAll('img, svg, canvas').forEach(media => {
+                    media.style.setProperty('max-width', '100%', 'important');
+                    media.style.setProperty('height', 'auto', 'important');
+                });
+
+                section.querySelectorAll('table').forEach(table => {
+                    table.style.setProperty('max-width', '100%', 'important');
+                    table.style.setProperty('width', '100%', 'important');
+                    table.style.setProperty('table-layout', 'auto', 'important');
+                });
+
+                if (isMobile) {
+                    section.querySelectorAll('p, span, td, th, div').forEach(el => {
+                        el.style.setProperty('max-width', '100%', 'important');
+                        el.style.setProperty('min-width', '0', 'important');
+                        el.style.setProperty('overflow-wrap', 'anywhere', 'important');
+                        el.style.setProperty('word-break', 'normal', 'important');
+                    });
+                }
+            });
+        }
+
+        function normalizeDocxViewer() {
+            normalizeDocxBackground();
+            normalizeDocxMobileLayout();
+        }
+
         // Wait for docx-preview library to load
         function tryRender(attempts) {
             if (attempts <= 0) {
@@ -2100,8 +2195,10 @@
                 })
                 .then(() => {
                     if (loading) loading.style.display = 'none';
-                    normalizeDocxBackground();
-                    setTimeout(normalizeDocxBackground, 150);
+                    normalizeDocxViewer();
+                    setTimeout(normalizeDocxViewer, 150);
+                    window.addEventListener('resize', normalizeDocxViewer);
+                    window.addEventListener('orientationchange', () => setTimeout(normalizeDocxViewer, 250));
                     container.addEventListener('mouseup', handleTextSelection);
                 })
                 .catch(err => {
