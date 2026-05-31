@@ -109,14 +109,21 @@ def _get_doc_for_request(request, doc_id):
 def home(request):
     if request.user.is_authenticated:
         documents = Document.objects.filter(user=request.user).prefetch_related(
-            "chat_messages", "flashcards").all()
+            "chat_messages", "flashcards", "mcqs").all()
     else:
         ids = _guest_doc_ids(request)
         documents = Document.objects.filter(id__in=ids, user__isnull=True).prefetch_related(
-            "chat_messages", "flashcards") if ids else []
+            "chat_messages", "flashcards", "mcqs") if ids else []
+    total_flashcards = sum(doc.flashcards.count() for doc in documents)
+    total_mcqs = sum(doc.mcqs.count() for doc in documents)
     guest_remaining = max(0, GUEST_UPLOAD_LIMIT - len(_guest_doc_ids(request))
                           ) if not request.user.is_authenticated else None
-    return render(request, "documents/home.html", {"documents": documents, "guest_remaining": guest_remaining})
+    return render(request, "documents/home.html", {
+        "documents": documents,
+        "guest_remaining": guest_remaining,
+        "total_flashcards": total_flashcards,
+        "total_mcqs": total_mcqs,
+    })
 
 
 def upload_document(request):
