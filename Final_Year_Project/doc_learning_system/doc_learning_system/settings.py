@@ -72,15 +72,8 @@ WSGI_APPLICATION = 'doc_learning_system.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'doc_learning_db'),
-        'USER': os.environ.get('DB_USER', 'doc_user'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'your_strong_password'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
