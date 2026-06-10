@@ -39,7 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'documents',
 ]
-
+CSRF_TRUSTED_ORIGINS = [
+    "https://final-year-project-vglh.onrender.com/",
+]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
