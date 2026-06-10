@@ -109,14 +109,21 @@ def _get_doc_for_request(request, doc_id):
 def home(request):
     if request.user.is_authenticated:
         documents = Document.objects.filter(user=request.user).prefetch_related(
-            "chat_messages", "flashcards").all()
+            "chat_messages", "flashcards", "mcqs").all()
     else:
         ids = _guest_doc_ids(request)
         documents = Document.objects.filter(id__in=ids, user__isnull=True).prefetch_related(
-            "chat_messages", "flashcards") if ids else []
+            "chat_messages", "flashcards", "mcqs") if ids else []
+    total_flashcards = sum(doc.flashcards.count() for doc in documents)
+    total_mcqs = sum(doc.mcqs.count() for doc in documents)
     guest_remaining = max(0, GUEST_UPLOAD_LIMIT - len(_guest_doc_ids(request))
                           ) if not request.user.is_authenticated else None
-    return render(request, "documents/home.html", {"documents": documents, "guest_remaining": guest_remaining})
+    return render(request, "documents/home.html", {
+        "documents": documents,
+        "guest_remaining": guest_remaining,
+        "total_flashcards": total_flashcards,
+        "total_mcqs": total_mcqs,
+    })
 
 
 def upload_document(request):
@@ -460,3 +467,67 @@ def register(request):
         form = CustomUserCreationForm()
 
     return render(request, "registration/register.html", {"form": form})
+
+
+# ── Writing Assistant ──────────────────────────────────────────────────────────
+
+def writing_assistant(request):
+    """Render the Writing Assistant page."""
+    return render(request, "documents/writing_assistant.html")
+
+
+@require_http_methods(["POST"])
+def writing_ai(request):
+    """AJAX endpoint: accepts prompt + article text, returns AI response."""
+    import json
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    prompt   = (body.get("prompt") or "").strip()
+    article  = (body.get("article") or "").strip()
+    selected = (body.get("selected") or "").strip()
+
+    if not prompt:
+        return JsonResponse({"error": "No prompt provided"}, status=400)
+
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return JsonResponse({"error": "GROQ_API_KEY not configured"}, status=500)
+
+    from groq import Groq
+    client = Groq(api_key=api_key)
+
+    # Build context for the model
+    context_parts = []
+    if selected:
+        context_parts.append(f"Selected text the user is working on:\n\"\"\"\n{selected[:3000]}\n\"\"\"")
+    if article:
+        context_parts.append(f"Full article so far:\n\"\"\"\n{article[:6000]}\n\"\"\"")
+    context = "\n\n".join(context_parts)
+
+    system_prompt = (
+        "You are an expert writing assistant embedded in a rich-text editor. "
+        "Help the user write, improve, and refine their article. "
+        "When asked to fix grammar or rewrite, return ONLY the corrected/rewritten text with no preamble. "
+        "When asked to summarise, expand, or suggest ideas, be clear and concise. "
+        "Never add meta-commentary like 'Here is the rewritten version:' unless the user asked for an explanation — "
+        "just return the result directly."
+    )
+
+    user_message = f"{context}\n\nUser request: {prompt}" if context else prompt
+
+    try:
+        resp = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            max_tokens=2048,
+            messages=[
+                {"role": "system",  "content": system_prompt},
+                {"role": "user",    "content": user_message},
+            ],
+        )
+        response_text = resp.choices[0].message.content.strip()
+        return JsonResponse({"response": response_text})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

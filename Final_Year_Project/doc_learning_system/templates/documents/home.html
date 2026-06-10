@@ -879,21 +879,14 @@
         <div class="stat-pill-icon"><i class="fas fa-cards-blank"></i></div>
         <div>
             <div class="stat-label">Flashcards</div>
-            <div class="stat-value">
-                {% with total=0 %}
-                {% for d in documents %}
-                {% with total=total|add:d.flashcards.count %}{% endwith %}
-                {% endfor %}
-                {{ documents|length }}+
-                {% endwith %}
-            </div>
+            <div class="stat-value">{{ total_flashcards }}</div>
         </div>
     </div>
     <div class="stat-pill">
         <div class="stat-pill-icon"><i class="fas fa-list-check"></i></div>
         <div>
             <div class="stat-label">MCQs Generated</div>
-            <div class="stat-value">—</div>
+            <div class="stat-value">{{ total_mcqs }}</div>
         </div>
     </div>
     <div class="stat-pill">
@@ -953,6 +946,10 @@
                     <div class="stat-tag">
                         <i class="fas fa-layer-group"></i>
                         {{ doc.flashcards.count }} cards
+                    </div>
+                    <div class="stat-tag">
+                        <i class="fas fa-list-check"></i>
+                        {{ doc.mcqs.count }} MCQs
                     </div>
                 </div>
                 <div class="card-actions">

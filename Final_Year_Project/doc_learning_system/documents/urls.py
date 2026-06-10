@@ -18,4 +18,6 @@ urlpatterns = [
     path("short-questions/<int:doc_id>/",  views.create_short_questions_from_text, name="create_short_questions"),
     path("highlight/<int:doc_id>/",        views.save_highlight,                name="save_highlight"),
     path("register/",                      views.register,                      name="register"),
+    path("write/",                         views.writing_assistant,              name="writing_assistant"),
+    path("write/ai/",                      views.writing_ai,                    name="writing_ai"),
 ]

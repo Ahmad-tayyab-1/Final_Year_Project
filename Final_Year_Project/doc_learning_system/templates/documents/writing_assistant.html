@@ -1,0 +1,1371 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Writing Assistant — DocuLearn AI{% endblock %}
+{% block extra_css %}
+<style>
+    /* ── Reset base template wrapper ───────────────────────── */
+    html,
+    body {
+        height: 100%;
+        overflow: hidden;
+        overflow-x: hidden;
+    }
+
+    .page-body {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    .container,
+    .main-content,
+    main,
+    #content {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* ── App shell ─────────────────────────────────────────── */
+    .app-shell {
+        height: 100vh;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .navbar {
+        top: 0;
+        margin-bottom: 0;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+        border-top: 0;
+        padding: 10px 28px;
+        flex-shrink: 0;
+    }
+
+    .alerts-wrap {
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    /* ── Doc bar ───────────────────────────────────────────── */
+    .doc-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 20px;
+        background: #0d1117;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, .07);
+    }
+
+    .doc-bar-icon {
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .doc-bar-icon i {
+        color: white;
+        font-size: 13px;
+    }
+
+    .doc-bar-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #e2e8f0;
+        flex: 1;
+    }
+
+    .bar-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 7px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, .09);
+        background: rgba(255, 255, 255, .06);
+        color: #cbd5e1;
+        cursor: pointer;
+        transition: all .2s;
+        white-space: nowrap;
+    }
+
+    .bar-btn:hover {
+        background: rgba(99, 102, 241, .3);
+        border-color: rgba(99, 102, 241, .5);
+    }
+
+    .bar-btn i {
+        font-size: 10px;
+    }
+
+    .wc-badge {
+        font-size: 11px;
+        color: #475569;
+        padding: 4px 10px;
+        background: rgba(255, 255, 255, .04);
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, .06);
+    }
+
+    /* ── Split layout ──────────────────────────────────────── */
+    .split {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    /* ── Editor panel ──────────────────────────────────────── */
+    .panel-editor {
+        width: 58%;
+        min-width: 340px;
+        max-width: 900px;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid rgba(255, 255, 255, .07);
+        overflow: hidden;
+        background: #1a1f2e;
+    }
+
+    [data-theme="light"] .panel-editor {
+        background: #f1f5f9;
+        border-right-color: #e2e8f0;
+    }
+
+    /* ── Toolbar ───────────────────────────────────────────── */
+    .editor-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+        padding: 8px 14px;
+        background: #111827;
+        border-bottom: 1px solid rgba(255, 255, 255, .07);
+        flex-shrink: 0;
+    }
+
+    [data-theme="light"] .editor-toolbar {
+        background: #e2e8f0;
+        border-bottom-color: #cbd5e1;
+    }
+
+    .toolbar-sep {
+        width: 1px;
+        height: 20px;
+        background: rgba(255, 255, 255, .1);
+        margin: 0 4px;
+    }
+
+    [data-theme="light"] .toolbar-sep {
+        background: rgba(0, 0, 0, .15);
+    }
+
+    .t-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        border: none;
+        position: relative;
+        background: transparent;
+        color: #94a3b8;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: all .15s;
+    }
+
+    [data-theme="light"] .t-btn {
+        color: #475569;
+    }
+
+    .t-btn:hover {
+        background: rgba(99, 102, 241, .25);
+        color: #c7d2fe;
+    }
+
+    [data-theme="light"] .t-btn:hover {
+        background: rgba(99, 102, 241, .15);
+        color: #4f46e5;
+    }
+
+    .t-btn[title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: -26px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1e293b;
+        color: #e2e8f0;
+        font-size: 10px;
+        padding: 3px 7px;
+        border-radius: 4px;
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 100;
+        border: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    .font-size-select {
+        background: rgba(255, 255, 255, .06);
+        border: 1px solid rgba(255, 255, 255, .09);
+        color: #94a3b8;
+        border-radius: 6px;
+        padding: 3px 6px;
+        font-size: 11px;
+        cursor: pointer;
+    }
+
+    [data-theme="light"] .font-size-select {
+        background: rgba(0, 0, 0, .05);
+        border-color: #cbd5e1;
+        color: #475569;
+    }
+
+    /* ── Editor area ───────────────────────────────────────── */
+    .editor-wrap {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+        background: #1a1f2e;
+    }
+
+    [data-theme="light"] .editor-wrap {
+        background: #f1f5f9;
+    }
+
+    .editor-area {
+        width: 100%;
+        min-height: 100%;
+        box-sizing: border-box;
+        background: #1e2535;
+        color: #e2e8f0;
+        padding: 32px 40px;
+        font-size: 15px;
+        line-height: 1.9;
+        outline: none;
+        font-family: 'DM Sans', Georgia, serif;
+    }
+
+    [data-theme="light"] .editor-area {
+        background: #ffffff;
+        color: #1e293b;
+    }
+
+    .editor-area:empty::before {
+        content: attr(data-placeholder);
+        color: #94a3b8;
+        pointer-events: none;
+    }
+
+    [data-theme="light"] .editor-area:empty::before {
+        color: #94a3b8;
+    }
+
+    /* Headings — dark */
+    .editor-area h1 {
+        font-size: 2em;
+        margin: .5em 0 .3em;
+        font-weight: 700;
+        color: #f1f5f9;
+    }
+
+    .editor-area h2 {
+        font-size: 1.5em;
+        margin: .6em 0 .3em;
+        font-weight: 600;
+        color: #e2e8f0;
+    }
+
+    .editor-area h3 {
+        font-size: 1.2em;
+        margin: .5em 0 .2em;
+        font-weight: 600;
+        color: #cbd5e1;
+    }
+
+    /* Headings — light */
+    [data-theme="light"] .editor-area h1 {
+        color: #0f172a;
+    }
+
+    [data-theme="light"] .editor-area h2 {
+        color: #1e293b;
+    }
+
+    [data-theme="light"] .editor-area h3 {
+        color: #334155;
+    }
+
+    .editor-area p {
+        margin: 0 0 .8em;
+    }
+
+    .editor-area ul,
+    .editor-area ol {
+        padding-left: 1.5em;
+        margin: .5em 0 .8em;
+    }
+
+    .editor-area blockquote {
+        border-left: 3px solid #6366f1;
+        margin: .8em 0;
+        padding: .4em 1em;
+        color: #94a3b8;
+        font-style: italic;
+        background: rgba(99, 102, 241, .08);
+    }
+
+    [data-theme="light"] .editor-area blockquote {
+        color: #475569;
+        background: #ede9fe;
+    }
+
+    .editor-area a {
+        color: #818cf8;
+    }
+
+    [data-theme="light"] .editor-area a {
+        color: #4f46e5;
+    }
+
+    /* ── Resize handle ─────────────────────────────────────── */
+    .resize-handle {
+        width: 5px;
+        background: transparent;
+        cursor: col-resize;
+        flex-shrink: 0;
+        transition: background .2s;
+    }
+
+    .resize-handle:hover,
+    .resize-handle.dragging {
+        background: rgba(99, 102, 241, .4);
+    }
+
+    /* ── Right panel ───────────────────────────────────────── */
+    .panel-right {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        background: #0f1420;
+        overflow: hidden;
+    }
+
+    [data-theme="light"] .panel-right {
+        background: #f8fafc;
+    }
+
+    /* Tab bar */
+    .rp-tabs {
+        display: flex;
+        align-items: center;
+        background: #0d1117;
+        border-bottom: 1px solid rgba(255, 255, 255, .07);
+        padding: 0 8px;
+        flex-shrink: 0;
+        gap: 4px;
+    }
+
+    [data-theme="light"] .rp-tabs {
+        background: #e2e8f0;
+        border-bottom-color: #cbd5e1;
+    }
+
+    .rp-tab {
+        padding: 10px 14px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        transition: all .2s;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .rp-tab:hover {
+        color: #94a3b8;
+    }
+
+    [data-theme="light"] .rp-tab:hover {
+        color: #334155;
+    }
+
+    .rp-tab.active {
+        color: #818cf8;
+        border-bottom-color: #6366f1;
+    }
+
+    [data-theme="light"] .rp-tab.active {
+        color: #4f46e5;
+        border-bottom-color: #6366f1;
+    }
+
+    /* ── Search pane ───────────────────────────────────────── */
+    .google-pane {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .google-search-bar {
+        display: flex;
+        gap: 8px;
+        padding: 12px 14px;
+        background: #0d1117;
+        border-bottom: 1px solid rgba(255, 255, 255, .07);
+        flex-shrink: 0;
+    }
+
+    [data-theme="light"] .google-search-bar {
+        background: #e2e8f0;
+        border-bottom-color: #cbd5e1;
+    }
+
+    .google-input {
+        flex: 1;
+        background: rgba(255, 255, 255, .06);
+        border: 1px solid rgba(255, 255, 255, .1);
+        border-radius: 8px;
+        color: #e2e8f0;
+        padding: 8px 12px;
+        font-size: 13px;
+        outline: none;
+    }
+
+    [data-theme="light"] .google-input {
+        background: #fff;
+        border-color: #cbd5e1;
+        color: #1e293b;
+    }
+
+    .google-input:focus {
+        border-color: #6366f1;
+    }
+
+    .google-go-btn {
+        padding: 8px 14px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all .2s;
+    }
+
+    .google-go-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, .4);
+    }
+
+    /* engine chips row */
+    .engine-row {
+        display: flex;
+        gap: 8px;
+        padding: 10px 14px;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, .07);
+        background: #0d1117;
+    }
+
+    [data-theme="light"] .engine-row {
+        background: #f1f5f9;
+        border-bottom-color: #e2e8f0;
+    }
+
+    /* recent searches */
+    .recent-wrap {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px;
+        background: #0f1420;
+    }
+
+    [data-theme="light"] .recent-wrap {
+        background: #f8fafc;
+    }
+
+    .recent-label {
+        font-size: 11px;
+        color: #475569;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-bottom: 10px;
+    }
+
+    .recent-empty {
+        font-size: 12px;
+        color: #334155;
+        font-style: italic;
+    }
+
+    [data-theme="light"] .recent-empty {
+        color: #94a3b8;
+    }
+
+    .recent-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, .04);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, .07);
+        cursor: pointer;
+        margin-bottom: 6px;
+        transition: all .15s;
+    }
+
+    [data-theme="light"] .recent-item {
+        background: #fff;
+        border-color: #e2e8f0;
+    }
+
+    .recent-item:hover {
+        background: rgba(99, 102, 241, .1);
+        border-color: rgba(99, 102, 241, .3);
+    }
+
+    /* ── AI pane ───────────────────────────────────────────── */
+    .ai-pane {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: #0f1420;
+    }
+
+    [data-theme="light"] .ai-pane {
+        background: #f8fafc;
+    }
+
+    .ai-feed {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: #0f1420;
+    }
+
+    [data-theme="light"] .ai-feed {
+        background: #f8fafc;
+    }
+
+    .ai-msg {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .ai-msg.user {
+        flex-direction: row-reverse;
+    }
+
+    .ai-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+    }
+
+    .ai-avatar.bot {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+    }
+
+    .ai-avatar.user {
+        background: rgba(255, 255, 255, .1);
+        color: #94a3b8;
+    }
+
+    [data-theme="light"] .ai-avatar.user {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .ai-bubble {
+        max-width: 80%;
+        padding: 10px 13px;
+        border-radius: 12px;
+        font-size: 13px;
+        line-height: 1.65;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .ai-msg.bot .ai-bubble {
+        background: rgba(99, 102, 241, .12);
+        border: 1px solid rgba(99, 102, 241, .2);
+        color: #cbd5e1;
+        border-top-left-radius: 4px;
+    }
+
+    [data-theme="light"] .ai-msg.bot .ai-bubble {
+        background: #ede9fe;
+        border-color: #c4b5fd;
+        color: #1e293b;
+    }
+
+    .ai-msg.user .ai-bubble {
+        background: linear-gradient(135deg, rgba(99, 102, 241, .3), rgba(139, 92, 246, .25));
+        color: #e2e8f0;
+        border-top-right-radius: 4px;
+        border: 1px solid rgba(99, 102, 241, .3);
+    }
+
+    [data-theme="light"] .ai-msg.user .ai-bubble {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+    }
+
+    .ai-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        padding: 8px 14px 0;
+        background: #0d1117;
+        flex-shrink: 0;
+    }
+
+    [data-theme="light"] .ai-chips {
+        background: #e2e8f0;
+    }
+
+    .ai-chip {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 9px;
+        border-radius: 20px;
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, .1);
+        color: #94a3b8;
+        background: rgba(255, 255, 255, .05);
+        transition: all .15s;
+        white-space: nowrap;
+    }
+
+    [data-theme="light"] .ai-chip {
+        border-color: #cbd5e1;
+        color: #475569;
+        background: #fff;
+    }
+
+    .ai-chip:hover {
+        background: rgba(99, 102, 241, .2);
+        border-color: rgba(99, 102, 241, .4);
+        color: #a5b4fc;
+    }
+
+    [data-theme="light"] .ai-chip:hover {
+        background: #ede9fe;
+        border-color: #a5b4fc;
+        color: #4f46e5;
+    }
+
+    .ai-typing {
+        color: #475569;
+        font-size: 12px;
+        font-style: italic;
+        padding: 4px 14px;
+        display: none;
+    }
+
+    .ai-typing.show {
+        display: block;
+    }
+
+    .ai-input-row {
+        display: flex;
+        gap: 8px;
+        padding: 12px 14px;
+        background: #0d1117;
+        border-top: 1px solid rgba(255, 255, 255, .07);
+        flex-shrink: 0;
+    }
+
+    [data-theme="light"] .ai-input-row {
+        background: #e2e8f0;
+        border-top-color: #cbd5e1;
+    }
+
+    .ai-input {
+        flex: 1;
+        background: rgba(255, 255, 255, .06);
+        border: 1px solid rgba(255, 255, 255, .1);
+        border-radius: 8px;
+        color: #e2e8f0;
+        padding: 8px 12px;
+        font-size: 13px;
+        outline: none;
+        resize: none;
+        min-height: 36px;
+        max-height: 100px;
+        font-family: inherit;
+    }
+
+    [data-theme="light"] .ai-input {
+        background: #fff;
+        border-color: #cbd5e1;
+        color: #1e293b;
+    }
+
+    .ai-input:focus {
+        border-color: #6366f1;
+    }
+
+    .ai-send {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: none;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: all .2s;
+        flex-shrink: 0;
+        align-self: flex-end;
+    }
+
+    .ai-send:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, .4);
+    }
+
+    /* ── Selection popup ───────────────────────────────────── */
+    .sel-popup {
+        position: fixed;
+        z-index: 9999;
+        display: none;
+        background: #1e293b;
+        border: 1px solid rgba(99, 102, 241, .4);
+        border-radius: 10px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+        padding: 6px 8px;
+        gap: 4px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .sel-popup.show {
+        display: flex;
+    }
+
+    .sel-action {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 7px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        background: rgba(255, 255, 255, .07);
+        color: #cbd5e1;
+        transition: all .15s;
+        white-space: nowrap;
+    }
+
+    .sel-action:hover {
+        background: rgba(99, 102, 241, .3);
+        color: #e0e7ff;
+    }
+
+    .sel-action i {
+        font-size: 10px;
+    }
+
+    .sel-sep {
+        width: 1px;
+        height: 20px;
+        background: rgba(255, 255, 255, .1);
+        margin: 0 2px;
+    }
+
+    /* ── Toast ─────────────────────────────────────────────── */
+    .toast-area {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    .toast {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, .12);
+        border-radius: 10px;
+        padding: 11px 16px;
+        font-size: 13px;
+        color: #e2e8f0;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+        animation: toastIn .25s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        pointer-events: all;
+        max-width: 360px;
+    }
+
+    .toast.success {
+        border-color: rgba(16, 185, 129, .3);
+    }
+
+    .toast.error {
+        border-color: rgba(239, 68, 68, .3);
+    }
+
+    @keyframes toastIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    .kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, .08);
+        border: 1px solid rgba(255, 255, 255, .12);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: 9px;
+        font-family: monospace;
+        color: #64748b;
+        margin-left: 4px;
+    }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 900px) {
+
+        html,
+        body {
+            overflow: auto;
+            height: auto;
+        }
+
+        .app-shell {
+            height: auto;
+            overflow: visible;
+        }
+
+        .split {
+            flex-direction: column;
+            height: auto;
+            overflow: visible;
+        }
+
+        .panel-editor {
+            width: 100%;
+            max-width: 100%;
+            height: 70vh;
+            min-height: 400px;
+            border-right: none;
+            border-bottom: 1px solid rgba(255, 255, 255, .07);
+        }
+
+        .resize-handle {
+            display: none;
+        }
+
+        .panel-right {
+            height: 60vh;
+            min-height: 380px;
+        }
+
+        .editor-area {
+            padding: 20px 18px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+    <!-- Doc bar -->
+    <div class="doc-bar">
+        <div class="doc-bar-icon"><i class="fas fa-pen-nib"></i></div>
+        <span class="doc-bar-title">Writing Assistant</span>
+        <span class="wc-badge" id="wcBadge">0 words</span>
+        <button class="bar-btn" onclick="exportAs('txt')"><i class="fas fa-file-lines"></i> Export TXT</button>
+        <button class="bar-btn" onclick="exportAs('html')"><i class="fas fa-code"></i> Export HTML</button>
+        <button class="bar-btn" onclick="clearEditor()"><i class="fas fa-file-circle-plus"></i> New</button>
+    </div>
+
+    <div class="split">
+
+        <!-- LEFT: Editor -->
+        <div class="panel-editor" id="panelEditor">
+            <div class="editor-toolbar">
+                <button class="t-btn" title="Bold (Ctrl+B)" onclick="fmt('bold')"><i class="fas fa-bold"></i></button>
+                <button class="t-btn" title="Italic (Ctrl+I)" onclick="fmt('italic')"><i class="fas fa-italic"></i></button>
+                <button class="t-btn" title="Underline (Ctrl+U)" onclick="fmt('underline')"><i class="fas fa-underline"></i></button>
+                <button class="t-btn" title="Strikethrough" onclick="fmt('strikeThrough')"><i class="fas fa-strikethrough"></i></button>
+                <div class="toolbar-sep"></div>
+                <button class="t-btn" title="Heading 1" onclick="fmtBlock('H1')"><b style="font-size:14px">H1</b></button>
+                <button class="t-btn" title="Heading 2" onclick="fmtBlock('H2')"><b style="font-size:12px">H2</b></button>
+                <button class="t-btn" title="Heading 3" onclick="fmtBlock('H3')"><b style="font-size:11px">H3</b></button>
+                <button class="t-btn" title="Paragraph" onclick="fmtBlock('P')"><i class="fas fa-paragraph"></i></button>
+                <div class="toolbar-sep"></div>
+                <button class="t-btn" title="Bullet list" onclick="fmt('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                <button class="t-btn" title="Numbered list" onclick="fmt('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                <button class="t-btn" title="Blockquote" onclick="fmtBlock('BLOCKQUOTE')"><i class="fas fa-quote-left"></i></button>
+                <div class="toolbar-sep"></div>
+                <button class="t-btn" title="Align left" onclick="fmt('justifyLeft')"><i class="fas fa-align-left"></i></button>
+                <button class="t-btn" title="Align center" onclick="fmt('justifyCenter')"><i class="fas fa-align-center"></i></button>
+                <button class="t-btn" title="Align right" onclick="fmt('justifyRight')"><i class="fas fa-align-right"></i></button>
+                <div class="toolbar-sep"></div>
+                <button class="t-btn" title="Undo (Ctrl+Z)" onclick="fmt('undo')"><i class="fas fa-rotate-left"></i></button>
+                <button class="t-btn" title="Redo (Ctrl+Y)" onclick="fmt('redo')"><i class="fas fa-rotate-right"></i></button>
+                <div class="toolbar-sep"></div>
+                <select class="font-size-select" onchange="setFontSize(this.value)">
+                    <option value="">Size</option>
+                    <option value="1">10px</option>
+                    <option value="2">13px</option>
+                    <option value="3" selected>16px</option>
+                    <option value="4">18px</option>
+                    <option value="5">24px</option>
+                    <option value="6">32px</option>
+                </select>
+            </div>
+            <div class="editor-wrap">
+                <div class="editor-area" id="editorArea" contenteditable="true" data-placeholder="Start writing… Select any text for AI actions, or use Ctrl+Shift+G to fix grammar, Ctrl+Shift+S to summarise, Ctrl+Shift+R to rewrite.">
+                </div>
+            </div>
+        </div>
+
+        <div class="resize-handle" id="resizeHandle"></div>
+
+        <!-- RIGHT panel -->
+        <div class="panel-right">
+            <div class="rp-tabs">
+                <div class="rp-tab active" data-rp="google" onclick="switchRpTab('google')">
+                    <i class="fas fa-search"></i> Search
+                </div>
+                <div class="rp-tab" data-rp="ai" onclick="switchRpTab('ai')">
+                    <i class="fas fa-wand-magic-sparkles"></i> AI Assistant
+                </div>
+            </div>
+
+            <!-- Search pane -->
+            <div class="google-pane" id="rp-google">
+                <div class="google-search-bar">
+                    <input class="google-input" id="googleSearchInput" placeholder="Search the web…" onkeydown="if(event.key==='Enter') openSearch()">
+                    <button class="google-go-btn" onclick="openSearch()">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div class="engine-row">
+                    <button class="ai-chip" onclick="openSearchWith('google')"><i class="fab fa-google"></i> Google</button>
+                    <button class="ai-chip" onclick="openSearchWith('bing')"><i class="fab fa-microsoft"></i> Bing</button>
+                    <button class="ai-chip" onclick="openSearchWith('ddg')">🦆 DuckDuckGo</button>
+                    <button class="ai-chip" onclick="openSearchWith('scholar')"><i class="fas fa-graduation-cap"></i> Scholar</button>
+                </div>
+                <div class="recent-wrap">
+                    <div class="recent-label">Recent Searches</div>
+                    <div id="recentSearches">
+                        <div class="recent-empty" data-empty="1">No searches yet — results open in a new tab</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI pane -->
+            <div class="ai-pane" id="rp-ai" style="display:none;">
+                <div class="ai-chips">
+                    <span class="ai-chip" onclick="aiQuickAction('Fix grammar in my article')" title="Ctrl+Shift+G">
+                        <i class="fas fa-spell-check"></i> Fix Grammar <span class="kbd">⌃⇧G</span>
+                    </span>
+                    <span class="ai-chip" onclick="aiQuickAction('Summarise the article in 3 sentences')">
+                        <i class="fas fa-compress-alt"></i> Summarise <span class="kbd">⌃⇧S</span>
+                    </span>
+                    <span class="ai-chip" onclick="aiQuickAction('Rewrite to make it clearer and more engaging')">
+                        <i class="fas fa-pen-to-square"></i> Rewrite <span class="kbd">⌃⇧R</span>
+                    </span>
+                    <span class="ai-chip" onclick="aiQuickAction('Make the tone more formal and professional')">
+                        <i class="fas fa-tie"></i> Formal
+                    </span>
+                    <span class="ai-chip" onclick="aiQuickAction('Make the tone more casual and conversational')">
+                        <i class="fas fa-comments"></i> Casual
+                    </span>
+                    <span class="ai-chip" onclick="aiQuickAction('Expand this with more detail and examples')">
+                        <i class="fas fa-expand-alt"></i> Expand <span class="kbd">⌃⇧E</span>
+                    </span>
+                    <span class="ai-chip" onclick="aiQuickAction('Shorten this — keep only the key points')">
+                        <i class="fas fa-compress"></i> Shorten
+                    </span>
+                    <span class="ai-chip" onclick="aiQuickAction('Suggest a better title and introduction for this article')">
+                        <i class="fas fa-heading"></i> Better Title
+                    </span>
+                </div>
+
+                <div class="ai-feed" id="aiFeed">
+                    <div class="ai-msg bot">
+                        <div class="ai-avatar bot"><i class="fas fa-wand-magic-sparkles"></i></div>
+                        <div class="ai-bubble">
+                            Hi! I'm your writing assistant. I can:<br><br>
+                            • <strong>Fix grammar, rewrite, expand</strong> your article<br>
+                            • <strong>Select text</strong> → floating toolbar for instant actions<br>
+                            • <strong>Open a search</strong> — just say "search [topic]"<br>
+                            • Use shortcuts: <strong>Ctrl+Shift+G / S / R / E</strong><br>
+                            • Answer any writing question ✍️
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ai-typing" id="aiTyping">AI is writing…</div>
+
+                <div class="ai-input-row">
+                    <textarea class="ai-input" id="aiInput" rows="1" placeholder="Ask the AI anything… or say 'search quantum computing'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage();}"></textarea>
+                    <button class="ai-send" onclick="sendAiMessage()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+        </div><!-- /.panel-right -->
+    </div><!-- /.split -->
+</div><!-- /.app-shell -->
+
+<!-- Floating selection toolbar -->
+<div class="sel-popup" id="selPopup">
+    <button class="sel-action" onclick="selAction('fix_grammar')"><i class="fas fa-spell-check"></i> Fix Grammar</button>
+    <button class="sel-action" onclick="selAction('rewrite')"><i class="fas fa-pen-to-square"></i> Rewrite</button>
+    <button class="sel-action" onclick="selAction('expand')"><i class="fas fa-expand-alt"></i> Expand</button>
+    <button class="sel-action" onclick="selAction('shorten')"><i class="fas fa-compress"></i> Shorten</button>
+    <div class="sel-sep"></div>
+    <button class="sel-action" onclick="selAction('formal')"><i class="fas fa-tie"></i> Formal</button>
+    <button class="sel-action" onclick="selAction('casual')"><i class="fas fa-comments"></i> Casual</button>
+    <div class="sel-sep"></div>
+    <button class="sel-action" onclick="selAction('google_search')"><i class="fas fa-search"></i> Search</button>
+</div>
+
+<div class="toast-area" id="toastArea"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const CSRF = '{{ csrf_token }}';
+    const AI_URL = '{% url "documents:writing_ai" %}';
+
+    /* ── Toast ──────────────────────────────────────────────── */
+    function toast(msg, type = '') {
+        const area = document.getElementById('toastArea');
+        const t = document.createElement('div');
+        t.className = 'toast ' + type;
+        const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+        const color = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#818cf8';
+        t.innerHTML = `<i class="fas fa-${icon}" style="color:${color}"></i> ${msg}`;
+        area.appendChild(t);
+        setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .4s'; setTimeout(() => t.remove(), 400); }, 3500);
+    }
+
+    function autoGrow(el) {
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+    }
+
+    /* ── Word count ─────────────────────────────────────────── */
+    const editor = document.getElementById('editorArea');
+    function updateWC() {
+        const text = editor.innerText.trim();
+        const words = text ? text.split(/\s+/).length : 0;
+        document.getElementById('wcBadge').textContent = `${words} words · ${text.length} chars`;
+    }
+    editor.addEventListener('input', updateWC);
+
+    /* ── Formatting ─────────────────────────────────────────── */
+    function fmt(cmd, val = null) { document.execCommand(cmd, false, val); editor.focus(); }
+    function fmtBlock(tag) { document.execCommand('formatBlock', false, tag); editor.focus(); }
+    function setFontSize(v) { if (v) fmt('fontSize', v); }
+
+    /* ── Export ─────────────────────────────────────────────── */
+    function exportAs(type) {
+        let content, mime, ext;
+        if (type === 'txt') {
+            content = editor.innerText; mime = 'text/plain'; ext = 'txt';
+        } else {
+            content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Article</title></head><body style="max-width:800px;margin:40px auto;font-family:Georgia,serif;line-height:1.8;color:#1e293b;">${editor.innerHTML}</body></html>`;
+            mime = 'text/html'; ext = 'html';
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+        a.download = 'article.' + ext;
+        a.click();
+        toast('Exported as .' + ext, 'success');
+    }
+
+    function clearEditor() {
+        if (!editor.innerText.trim() || confirm('Start a new document? This will clear the editor.')) {
+            editor.innerHTML = ''; updateWC();
+        }
+    }
+
+    /* ── Tab switching ──────────────────────────────────────── */
+    function switchRpTab(name) {
+        document.querySelectorAll('.rp-tab').forEach(t => t.classList.toggle('active', t.dataset.rp === name));
+        document.getElementById('rp-google').style.display = name === 'google' ? 'flex' : 'none';
+        document.getElementById('rp-ai').style.display = name === 'ai' ? 'flex' : 'none';
+    }
+
+    /* ── Search (opens in new tab) ──────────────────────────── */
+    const searchEngines = {
+        google: q => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+        bing: q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
+        ddg: q => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+        scholar: q => `https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`,
+    };
+    let defaultEngine = 'google';
+
+    function openSearch() {
+        const q = document.getElementById('googleSearchInput').value.trim();
+        if (!q) return;
+        openSearchWith(defaultEngine, q);
+    }
+
+    function openSearchWith(engine, q) {
+        q = q || document.getElementById('googleSearchInput').value.trim();
+        if (!q) { toast('Enter a search term first', ''); return; }
+        window.open(searchEngines[engine](q), '_blank');
+        defaultEngine = engine;
+        // Record in recent
+        const list = document.getElementById('recentSearches');
+        const empty = list.querySelector('[data-empty]');
+        if (empty) empty.remove();
+        const item = document.createElement('div');
+        item.className = 'recent-item';
+        item.innerHTML = `<i class="fas fa-search" style="color:#6366f1;font-size:10px;flex-shrink:0;"></i>
+    <span style="font-size:12px;flex:1;">${q}</span>
+    <span style="font-size:10px;opacity:.5;">${engine}</span>`;
+        item.onclick = () => openSearchWith(engine, q);
+        list.prepend(item);
+        while (list.children.length > 8) list.lastChild.remove();
+    }
+
+    /* ── AI chat ─────────────────────────────────────────────── */
+    function escHtml(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+    }
+
+    function appendAiMsg(role, text) {
+        const feed = document.getElementById('aiFeed');
+        const div = document.createElement('div');
+        div.className = 'ai-msg ' + role;
+        const icon = role === 'bot' ? 'wand-magic-sparkles' : 'user';
+        div.innerHTML = `<div class="ai-avatar ${role}"><i class="fas fa-${icon}"></i></div>
+    <div class="ai-bubble">${escHtml(text)}</div>`;
+        feed.appendChild(div);
+        feed.scrollTop = feed.scrollHeight;
+        return div;
+    }
+
+    async function sendAiMessage() {
+        const input = document.getElementById('aiInput');
+        const msg = input.value.trim();
+        if (!msg) return;
+        input.value = ''; autoGrow(input);
+        appendAiMsg('user', msg);
+
+        // Search intent detection
+        const m = msg.match(/^(?:search|look up|find)\s+(.+)/i);
+        if (m) {
+            const q = m[1];
+            document.getElementById('googleSearchInput').value = q;
+            switchRpTab('google');
+            openSearchWith('google', q);
+            appendAiMsg('bot', `Opening Google search for "${q}" in a new tab. I've also switched to the Search panel so you can try Bing or Scholar too.`);
+            return;
+        }
+        await callAI(msg, null);
+    }
+
+    async function aiQuickAction(prompt) {
+        switchRpTab('ai');
+        appendAiMsg('user', prompt);
+        await callAI(prompt, null);
+    }
+
+    async function callAI(prompt, selectedText) {
+        const typing = document.getElementById('aiTyping');
+        typing.classList.add('show');
+        try {
+            const res = await fetch(AI_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                body: JSON.stringify({ prompt, article: editor.innerText.trim(), selected: selectedText || '' })
+            });
+            const data = await res.json();
+            typing.classList.remove('show');
+            if (data.error) { toast(data.error, 'error'); return null; }
+            appendAiMsg('bot', data.response);
+            return data.response;
+        } catch (e) {
+            typing.classList.remove('show');
+            toast('AI request failed', 'error');
+            return null;
+        }
+    }
+
+    /* ── Selection popup ────────────────────────────────────── */
+    let savedSelection = null;
+    function saveSelection() {
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0) savedSelection = sel.getRangeAt(0).cloneRange();
+    }
+    function restoreSelection() {
+        if (!savedSelection) return;
+        const sel = window.getSelection();
+        sel.removeAllRanges(); sel.addRange(savedSelection);
+    }
+
+    const popup = document.getElementById('selPopup');
+    editor.addEventListener('mouseup', showPopupIfSelection);
+    editor.addEventListener('touchend', showPopupIfSelection);
+
+    function showPopupIfSelection() {
+        setTimeout(() => {
+            const sel = window.getSelection();
+            const text = sel.toString().trim();
+            if (!text || !editor.contains(sel.anchorNode)) { hidePopup(); return; }
+            saveSelection();
+            const rect = sel.getRangeAt(0).getBoundingClientRect();
+            popup.style.left = Math.max(8, rect.left + rect.width / 2 - 150) + 'px';
+            popup.style.top = (rect.top + window.scrollY - 50) + 'px';
+            popup.classList.add('show');
+        }, 10);
+    }
+    document.addEventListener('mousedown', e => { if (!popup.contains(e.target)) hidePopup(); });
+    function hidePopup() { popup.classList.remove('show'); }
+
+    async function selAction(action) {
+        restoreSelection();
+        const sel = window.getSelection();
+        const selectedText = sel.toString().trim();
+        if (!selectedText) { toast('Select some text first', ''); return; }
+        hidePopup();
+
+        if (action === 'google_search') {
+            document.getElementById('googleSearchInput').value = selectedText;
+            switchRpTab('google');
+            openSearchWith('google', selectedText);
+            return;
+        }
+
+        const prompts = {
+            fix_grammar: `Fix the grammar and spelling in this text, return only the corrected text:\n\n${selectedText}`,
+            rewrite: `Rewrite this text to be clearer and more engaging, return only the rewritten text:\n\n${selectedText}`,
+            expand: `Expand this text with more detail and examples, return only the expanded version:\n\n${selectedText}`,
+            shorten: `Shorten this text keeping only key points, return only the shortened version:\n\n${selectedText}`,
+            formal: `Rewrite this in a formal, professional tone, return only the result:\n\n${selectedText}`,
+            casual: `Rewrite this in a casual, friendly tone, return only the result:\n\n${selectedText}`,
+        };
+
+        switchRpTab('ai');
+        appendAiMsg('user', `[${action.replace('_', ' ')}] ${selectedText.substring(0, 80)}${selectedText.length > 80 ? '…' : ''}`);
+        const result = await callAI(prompts[action], selectedText);
+
+        if (result) {
+            const feed = document.getElementById('aiFeed');
+            const lastBubble = feed.querySelector('.ai-msg.bot:last-child .ai-bubble');
+            if (lastBubble) {
+                const btn = document.createElement('button');
+                btn.className = 'sel-action';
+                btn.style.cssText = 'margin-top:8px; font-size:11px;';
+                btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Replace in editor';
+                btn.onclick = () => {
+                    restoreSelection();
+                    const s = window.getSelection();
+                    if (s.rangeCount > 0) {
+                        const range = s.getRangeAt(0);
+                        range.deleteContents();
+                        range.insertNode(document.createTextNode(result));
+                        editor.focus(); updateWC();
+                        toast('Text replaced!', 'success');
+                    }
+                    btn.remove();
+                };
+                lastBubble.appendChild(document.createElement('br'));
+                lastBubble.appendChild(btn);
+            }
+        }
+    }
+
+    /* ── Keyboard shortcuts ──────────────────────────────────── */
+    document.addEventListener('keydown', e => {
+        if (!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
+        const actions = {
+            G: 'Fix the grammar and spelling of my full article. Return the corrected version.',
+            S: 'Summarise the article in 3 concise sentences.',
+            R: 'Rewrite the article to make it clearer, more engaging, and better structured.',
+            E: 'Expand the article with more detail, examples, and supporting arguments.',
+        };
+        const fn = actions[e.key.toUpperCase()];
+        if (fn) { e.preventDefault(); switchRpTab('ai'); aiQuickAction(fn); }
+    });
+
+    /* ── Resize handle ───────────────────────────────────────── */
+    const handle = document.getElementById('resizeHandle');
+    const leftPnl = document.getElementById('panelEditor');
+    let drag = false, sx = 0, sw = 0;
+    handle.addEventListener('mousedown', e => {
+        drag = true; sx = e.clientX; sw = leftPnl.offsetWidth;
+        handle.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', e => {
+        if (!drag) return;
+        leftPnl.style.width = Math.max(320, Math.min(window.innerWidth * .75, sw + (e.clientX - sx))) + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+        drag = false; handle.classList.remove('dragging');
+        document.body.style.cursor = ''; document.body.style.userSelect = '';
+    });
+</script>
+{% endblock %}
