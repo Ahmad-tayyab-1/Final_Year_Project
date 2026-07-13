@@ -17,7 +17,7 @@ Upload and process a wide range of academic and professional formats:
 - Chat with video content as if it were a document.
 - Generate study materials from lectures and tutorials.
 
-### 🤖 AI-Powered Assistant (Groq Llama 3)
+### 🤖 AI-Powered Assistant (Groq gpt-oss-120b)
 - **Context-Aware Chat**: Ask questions about your documents and get answers with page/timestamp citations.
 - **Smart Explanations**: Select any text in a document to get a detailed AI explanation.
 - **Flashcard Generation**: Automatically create front/back study cards from content.
@@ -33,7 +33,7 @@ Upload and process a wide range of academic and professional formats:
 ## 🛠 Technical Architecture
 
 - **Backend**: Django 6.0+
-- **AI Engine**: Groq API (utilizing `llama-3.3-70b-versatile`)
+- **AI Engine**: Groq API (utilizing `gpt-oss-120b`)
 - **Document Processing**:
   - `PyMuPDF (fitz)`: High-performance PDF text and metadata extraction.
   - `LibreOffice (Headless)`: Used for converting Office documents to PDF for consistent viewing.
