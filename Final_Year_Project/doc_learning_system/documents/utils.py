@@ -13,7 +13,7 @@ from reportlab.lib.units import inch
 from groq import Groq
 from .youtube import extract_youtube_video_id
 
-
+GROQ_MODEL = "openai/gpt-oss-120b"
 class DocumentProcessor:
 
     def extract_text_with_pages(self, file_path):
@@ -876,7 +876,7 @@ class AIAssistant:
                          "If live web results are provided and useful, use them. If the context does not contain the answer but you know it generally, answer generally and make that clear."
                      )},
                 ],
-                model="llama-3.3-70b-versatile",
+                model=GROQ_MODEL,
                 temperature=0.6,
                 max_tokens=900,
             )
@@ -899,7 +899,7 @@ class AIAssistant:
                     {"role": "user",
                      "content": f"Text:\n{selected_text[:2000]}]\n\nContext:\n{document_context[:1200]}\n\nDetailed Explanation:"},
                 ],
-                model="llama-3.3-70b-versatile",
+                model=GROQ_MODEL,
                 temperature=0.7, max_tokens=1200,
             )
             return resp.choices[0].message.content
@@ -918,7 +918,7 @@ class AIAssistant:
                     {"role": "user",
                      "content": f"Create exactly {count} flashcards from:\n\n{text[:2500]}"},
                 ],
-                model="llama-3.3-70b-versatile",
+                model=GROQ_MODEL,
                 temperature=0.8, max_tokens=900,
             )
             raw = re.sub(
@@ -945,7 +945,7 @@ class AIAssistant:
                     {"role": "user",
                      "content": f"Create exactly {count} MCQs from:\\n\\n{text[:2500]}"},
                 ],
-                model="llama-3.3-70b-versatile",
+                model=GROQ_MODEL,
                 temperature=0.7, max_tokens=1200,
             )
             raw = re.sub(
@@ -977,7 +977,7 @@ class AIAssistant:
                     {"role": "user",
                      "content": f"Create exactly {count} questions from:\\n\\n{text[:2500]}"},
                 ],
-                model="llama-3.3-70b-versatile",
+                model=GROQ_MODEL,
                 temperature=0.7, max_tokens=900,
             )
             raw = re.sub(
