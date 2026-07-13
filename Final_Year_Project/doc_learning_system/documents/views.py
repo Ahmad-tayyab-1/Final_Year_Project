@@ -520,7 +520,7 @@ def writing_ai(request):
 
     try:
         resp = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=GROQ_MODEL,
             max_tokens=2048,
             messages=[
                 {"role": "system",  "content": system_prompt},
